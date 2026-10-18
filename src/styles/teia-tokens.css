@@ -1,0 +1,278 @@
+/**
+ * MENTE EM TEIA — DESIGN SYSTEM PRÓPRIO
+ * Neural Obsidian / Cosmic Void Specification v3.0
+ * Design System autônomo e isolado para o grafo de conhecimento, memórias e notas Obsidian-grade.
+ */
+
+:root {
+  /* ─────────────────────────────────────────────────────────────────────────
+   * Camadas de Vácuo Cósmico e Superfície (Neural Obsidian)
+   * ───────────────────────────────────────────────────────────────────────── */
+  --teia-void: #07080C;       /* Vácuo estelar absoluto — fundo principal */
+  --teia-base: #0B0D13;       /* Superfície base do workspace da Teia */
+  --teia-p1: #10121A;         /* Painéis laterais (Explorer & Inspector) */
+  --teia-p2: #161824;         /* Cards elevados, campos e cabeçalhos secundários */
+  --teia-p3: #1E2232;         /* Superfícies ativas, hover e seleção intensa */
+  --teia-p4: #282E44;         /* Relevos táteis e bordas de foco */
+
+  /* ─────────────────────────────────────────────────────────────────────────
+   * Assinatura Cromática: Índigo Neural de Alta Voltagem e Halos
+   * ───────────────────────────────────────────────────────────────────────── */
+  --teia-accent: #7A82E6;
+  --teia-accent-hover: #949BF2;
+  --teia-accent-active: #5C65C0;
+  --teia-accent-glow: rgba(122, 130, 230, 0.40);
+  --teia-accent-subtle: rgba(122, 130, 230, 0.14);
+  --teia-accent-dim: rgba(122, 130, 230, 0.07);
+  --teia-accent-border: rgba(122, 130, 230, 0.32);
+
+  /* ─────────────────────────────────────────────────────────────────────────
+   * Espectro Semântico de Conhecimento (Nós, Halos e Classificação)
+   * ───────────────────────────────────────────────────────────────────────── */
+  --teia-node-concept: #7A82E6;     /* Índigo: Conceitos puros e abstrações */
+  --teia-node-tech: #4AE2E8;        /* Ciano elétrico: Tecnologias e bibliotecas */
+  --teia-node-decision: #FFB86C;    /* Âmbar: Decisões arquiteturais e contratos */
+  --teia-node-project: #38BDF8;     /* Azul celeste: Projetos e subsistemas */
+  --teia-node-memory: #C678DD;      /* Púrpura cósmico: Memórias salvas da IA */
+  --teia-node-pref: #E06C75;        /* Rosa intenso: Preferências do usuário */
+  --teia-node-problem: #F85149;     /* Vermelho alerta: Problemas e conflitos */
+  --teia-node-solution: #65DCA2;    /* Esmeralda: Soluções validadas */
+  --teia-node-idea: #E5C07B;        /* Dourado: Ideias e hipóteses em aberto */
+  --teia-node-ref: #9CB4D4;         /* Azul ardósia: Referências externas */
+  --teia-node-hub: #B8C0FF;         /* Halo orbital estelar para nós de alto grau */
+  --teia-node-ghost: #4B535B;       /* Cinza estelar para nós citados mas não escritos */
+
+  /* ─────────────────────────────────────────────────────────────────────────
+   * Hairlines de Precisão, Divisores e Conexões
+   * ───────────────────────────────────────────────────────────────────────── */
+  --teia-line: rgba(180, 192, 230, 0.08);
+  --teia-line-subtle: rgba(180, 192, 230, 0.04);
+  --teia-line-hover: rgba(122, 130, 230, 0.35);
+  --teia-line-active: rgba(148, 155, 242, 0.85);
+
+  /* ─────────────────────────────────────────────────────────────────────────
+   * Tipografia e Escala de Contraste Óptico
+   * ───────────────────────────────────────────────────────────────────────── */
+  --teia-text-bright: #F4F6FC;      /* Texto de destaque e títulos */
+  --teia-text: #D2D5E2;             /* Texto de leitura confortável */
+  --teia-muted: #828B9C;            /* Legendas, contadores e metadados secundários */
+  --teia-faint: #495060;            /* Rótulos desativados e guias estruturais */
+
+  --teia-font-ui: "Inter", "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --teia-font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+  /* ─────────────────────────────────────────────────────────────────────────
+   * Status de Confiança e Proveniência Epistêmica
+   * ───────────────────────────────────────────────────────────────────────── */
+  --teia-trust-verified: #65DCA2;   /* Verificado pelo usuário / fonte oficial */
+  --teia-trust-ai: #C678DD;         /* Gerado ou inferido pela IA */
+  --teia-trust-warn: #E5C07B;       /* Parcialmente verificado / pendente */
+  --teia-trust-bad: #F85149;        /* Conflito ou desatualizado */
+
+  /* ─────────────────────────────────────────────────────────────────────────
+   * Geometria e Raios
+   * ───────────────────────────────────────────────────────────────────────── */
+  --teia-r-xs: 3px;
+  --teia-r-sm: 6px;
+  --teia-r-md: 10px;
+  --teia-r-lg: 14px;
+  --teia-r-xl: 20px;
+  --teia-r-full: 9999px;
+
+  /* ─────────────────────────────────────────────────────────────────────────
+   * Iluminação Cósmica, Halos e Profundidade
+   * ───────────────────────────────────────────────────────────────────────── */
+  --teia-shadow-node: 0 0 18px rgba(122, 130, 230, 0.28);
+  --teia-shadow-hub: 0 0 28px rgba(184, 192, 255, 0.45);
+  --teia-shadow-card: 0 10px 32px rgba(0, 0, 0, 0.60);
+  --teia-shadow-popover: 0 18px 52px rgba(0, 0, 0, 0.85);
+  --teia-glow-accent: 0 0 16px rgba(122, 130, 230, 0.35);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * ESCOPO E AMBIENTE PRÓPRIO DA MENTE EM TEIA
+ * ───────────────────────────────────────────────────────────────────────── */
+[data-environment="teia"],
+.teia-environment {
+  --color-bg: var(--teia-void);
+  --color-surface: var(--teia-base);
+  --color-surface-raised: var(--teia-p1);
+  --color-surface-hover: var(--teia-p2);
+  --color-border: var(--teia-line);
+  --color-border-subtle: var(--teia-line-subtle);
+  --color-focus: var(--teia-accent);
+  --color-primary: var(--teia-accent);
+  --color-text: var(--teia-text);
+  --color-text-secondary: var(--teia-muted);
+}
+
+/* Seleção de texto no universo da Teia */
+[data-environment="teia"] ::selection,
+.teia-environment ::selection {
+  background-color: rgba(122, 130, 230, 0.35);
+  color: var(--teia-text-bright);
+}
+
+/* Scrollbar estilizado do universo da Teia */
+[data-environment="teia"] ::-webkit-scrollbar-thumb,
+.teia-environment ::-webkit-scrollbar-thumb {
+  background-color: rgba(122, 130, 230, 0.18);
+  border-radius: var(--teia-r-full);
+}
+
+[data-environment="teia"] ::-webkit-scrollbar-thumb:hover,
+.teia-environment ::-webkit-scrollbar-thumb:hover {
+  background-color: var(--teia-accent-hover);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * Classes Utilitárias do Design System Mente em Teia
+ * ───────────────────────────────────────────────────────────────────────── */
+.teia-surface-void { background-color: var(--teia-void); }
+.teia-surface-base { background-color: var(--teia-base); }
+.teia-surface-p1 { background-color: var(--teia-p1); }
+.teia-surface-p2 { background-color: var(--teia-p2); }
+.teia-surface-p3 { background-color: var(--teia-p3); }
+
+.teia-border { border: 1px solid var(--teia-line); }
+.teia-border-accent { border: 1px solid var(--teia-accent-border); }
+
+/* Efeito Vitrificado Obsidiana (Glassmorphism) */
+.teia-glass {
+  background-color: rgba(16, 18, 26, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--teia-line);
+}
+
+/* Botões do Design System da Teia */
+.teia-btn-accent {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: var(--teia-r-sm);
+  background-color: var(--teia-accent-active);
+  border: 1px solid var(--teia-accent);
+  color: #FFFFFF;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 120ms ease-out;
+  box-shadow: 0 2px 10px rgba(122, 130, 230, 0.25);
+}
+.teia-btn-accent:hover:not(:disabled) {
+  background-color: var(--teia-accent);
+  border-color: var(--teia-accent-hover);
+  box-shadow: 0 4px 16px rgba(122, 130, 230, 0.45);
+}
+.teia-btn-accent:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.teia-btn-void {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: var(--teia-r-sm);
+  background-color: var(--teia-p2);
+  border: 1px solid var(--teia-line);
+  color: var(--teia-text);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 120ms ease-out;
+}
+.teia-btn-void:hover:not(:disabled) {
+  background-color: var(--teia-p3);
+  border-color: var(--teia-line-hover);
+  color: var(--teia-text-bright);
+}
+
+.teia-btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 5px 8px;
+  border-radius: var(--teia-r-sm);
+  background-color: transparent;
+  border: 1px solid transparent;
+  color: var(--teia-muted);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 120ms ease-out;
+}
+.teia-btn-ghost:hover:not(:disabled) {
+  background-color: var(--teia-p2);
+  border-color: var(--teia-line);
+  color: var(--teia-text-bright);
+}
+
+/* Wikilinks [[...]] Obsidian-Grade */
+.teia-wikilink {
+  color: var(--teia-accent-hover);
+  text-decoration: none;
+  border-bottom: 1px solid rgba(148, 155, 242, 0.45);
+  cursor: pointer;
+  padding: 0 3px;
+  border-radius: var(--teia-r-xs);
+  transition: all 120ms ease-out;
+}
+.teia-wikilink:hover {
+  background-color: var(--teia-accent-subtle);
+  border-bottom-color: var(--teia-accent-hover);
+  color: #FFFFFF;
+}
+.teia-wikilink--ghost {
+  color: var(--teia-muted);
+  border-bottom-style: dashed;
+  border-bottom-color: var(--teia-faint);
+}
+.teia-wikilink--ghost:hover {
+  color: var(--teia-text-bright);
+  border-bottom-color: var(--teia-muted);
+  background-color: rgba(75, 83, 91, 0.2);
+}
+
+/* Badges de Relação Tipada relacao:: [[Alvo]] */
+.teia-rel-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 7px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-family: var(--teia-font-mono);
+  background-color: var(--teia-accent-subtle);
+  color: var(--teia-accent-hover);
+  border: 1px solid var(--teia-accent-border);
+  font-weight: 600;
+  margin-right: 6px;
+}
+
+/* Tag Pills #tag */
+.teia-tag-pill {
+  display: inline-flex;
+  align-items: center;
+  color: var(--teia-accent-hover);
+  background: var(--teia-accent-dim);
+  border: 1px solid rgba(122, 130, 230, 0.22);
+  border-radius: 99px;
+  padding: 1px 8px;
+  font-size: 11px;
+  font-family: var(--teia-font-mono);
+}
+
+/* Glifo de Memória e IA Discreto (sem emojis) */
+.teia-ai-glyph {
+  color: var(--teia-node-memory);
+  font-size: 12px;
+  font-weight: 700;
+  text-shadow: 0 0 8px rgba(198, 120, 221, 0.5);
+  margin-left: 2px;
+}

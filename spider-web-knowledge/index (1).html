@@ -1,0 +1,95 @@
+// Busca híbrida da Teia: BM25 (lexical) + vetor semântico local + fusão RRF.
+// O embedder é plugável: troque HashEmbedder por um modelo real (Ollama, OpenAI…) mantendo a interface embed(text) -> Map.
+import { strip } from './markdown.js';
+
+const STOP = new Set(('a o os as um uma uns umas de do da dos das em no na nos nas por para com sem sobre e ou que se ao aos ' +
+  'como mais mas foi ser sao esta este esse essa isso meu minha seu sua eu voce ele ela the of and to in is for on with an at by it this that from').split(' '));
+const stem = t => (t.length > 4 && t.endsWith('s') ? t.slice(0, -1) : t);
+
+export function tokens(text) {
+  const m = strip(text).toLowerCase().match(/[a-z0-9]+/g) || [];
+  return m.filter(t => t.length > 1 && !STOP.has(t)).map(stem);
+}
+
+const fnv = s => { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; };
+
+// Embedder local sem modelo: palavras + trigramas de caracteres + bigramas, projetados em buckets por hash.
+export class HashEmbedder {
+  constructor(dim = 2048) { this.dim = dim; }
+  embed(text) {
+    const v = new Map();
+    const toks = tokens(text);
+    const add = (f, w) => { const i = fnv(f) % this.dim; v.set(i, (v.get(i) || 0) + w); };
+    toks.forEach((t, k) => {
+      add('w' + t, 1);
+      const p = `^${t}$`;
+      for (let i = 0; i + 3 <= p.length; i++) add('c' + p.slice(i, i + 3), 0.3);
+      if (k) add('b' + toks[k - 1] + '_' + t, 0.5);
+    });
+    return v;
+  }
+}
+
+const unit = v => { let s = 0; for (const x of v.values()) s += x * x; s = Math.sqrt(s) || 1; for (const [k, x] of v) v.set(k, x / s); return v; };
+
+export class Index {
+  constructor(chunks, embedder = new HashEmbedder()) {
+    this.chunks = chunks; this.embedder = embedder; this.N = chunks.length;
+    this.tf = []; this.len = []; this.df = new Map();
+    const raw = [];
+    for (const c of chunks) {
+      const toks = tokens(c.index), tf = new Map();
+      toks.forEach(t => tf.set(t, (tf.get(t) || 0) + 1));
+      this.tf.push(tf); this.len.push(toks.length);
+      for (const t of tf.keys()) this.df.set(t, (this.df.get(t) || 0) + 1);
+      raw.push(embedder.embed(c.index));
+    }
+    this.avg = this.len.reduce((a, b) => a + b, 0) / (this.N || 1) || 1;
+    const bdf = new Map();
+    raw.forEach(v => { for (const k of v.keys()) bdf.set(k, (bdf.get(k) || 0) + 1); });
+    this.bidf = k => Math.log(1 + this.N / (1 + (bdf.get(k) || 0)));
+    this.vecs = raw.map(v => this.weigh(v));
+  }
+  weigh(v) { const o = new Map(); for (const [k, x] of v) o.set(k, x * this.bidf(k)); return unit(o); }
+  bm25(query, k1 = 1.4, b = 0.75) {
+    const out = new Map();
+    for (const t of new Set(tokens(query))) {
+      const df = this.df.get(t); if (!df) continue;
+      const idf = Math.log(1 + (this.N - df + 0.5) / (df + 0.5));
+      this.tf.forEach((tf, i) => {
+        const f = tf.get(t); if (!f) return;
+        out.set(i, (out.get(i) || 0) + idf * (f * (k1 + 1)) / (f + k1 * (1 - b + b * this.len[i] / this.avg)));
+      });
+    }
+    return out;
+  }
+  semantic(query) {
+    const q = this.weigh(this.embedder.embed(query)), out = new Map();
+    this.vecs.forEach((v, i) => {
+      let s = 0; const [a, c] = q.size < v.size ? [q, v] : [v, q];
+      for (const [k, x] of a) { const y = c.get(k); if (y) s += x * y; }
+      if (s > 0.12) out.set(i, s);
+    });
+    return out;
+  }
+}
+
+// Fusão por Reciprocal Rank Fusion (k pequeno = ranking mais "íngreme", relevância mais informativa). Retorna Map<nodeId, { score, chunk }>.
+export const RRF_K = 10;
+export function fuse(index, query, mode = 'hybrid') {
+  const perNode = scores => {
+    const best = new Map();
+    for (const [i, s] of scores) { const id = index.chunks[i].nodeId; if (!best.has(id) || best.get(id).s < s) best.set(id, { s, chunk: i }); }
+    return [...best.entries()].sort((a, b) => b[1].s - a[1].s);
+  };
+  const lists = [];
+  if (mode !== 'semantic') lists.push(perNode(index.bm25(query)));
+  if (mode !== 'lexical') lists.push(perNode(index.semantic(query)));
+  const fused = new Map();
+  for (const list of lists) list.forEach(([id, { chunk }], rank) => {
+    const e = fused.get(id) || { score: 0, chunk };
+    e.score += 1 / (RRF_K + rank);
+    fused.set(id, e);
+  });
+  return fused;
+}

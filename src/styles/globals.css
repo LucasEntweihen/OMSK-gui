@@ -1,0 +1,111 @@
+@import "./tokens.css";
+@import "./animations.css";
+@import "./teia-tokens.css";
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-ui);
+  font-size: var(--text-md);
+  line-height: 1.5;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--ocean-800);
+  border-radius: var(--radius-full);
+  border: 1px solid var(--ocean-900);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--blue-selected);
+}
+
+/* Text Selection */
+::selection {
+  background-color: var(--blue-selected);
+  color: var(--color-text);
+}
+
+/* Focus styles */
+:focus-visible {
+  outline: none;
+  box-shadow: var(--glow-focus);
+}
+
+button, input, textarea, select {
+  font-family: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  background: transparent;
+}
+
+a {
+  color: var(--blue-400);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+code, pre, kbd {
+  font-family: var(--font-code);
+}
+
+/* Utility Helpers */
+.font-mono {
+  font-family: var(--font-code);
+}
+
+.text-primary { color: var(--color-text); }
+.text-secondary { color: var(--color-text-secondary); }
+.text-muted { color: var(--color-text-muted); }
+.text-accent { color: var(--blue-400); }
+.text-success { color: var(--state-success); }
+.text-warning { color: var(--state-warning); }
+.text-danger { color: var(--state-danger); }
+
+.bg-ocean-950 { background-color: var(--ocean-950); }
+.bg-ocean-900 { background-color: var(--ocean-900); }
+.bg-ocean-850 { background-color: var(--ocean-850); }
+.bg-ocean-800 { background-color: var(--ocean-800); }
+
+.border-subtle { border: 1px solid var(--color-border); }
+.border-b-subtle { border-bottom: 1px solid var(--color-border); }
+.border-t-subtle { border-top: 1px solid var(--color-border); }
+.border-r-subtle { border-right: 1px solid var(--color-border); }
+.border-l-subtle { border-left: 1px solid var(--color-border); }
+
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

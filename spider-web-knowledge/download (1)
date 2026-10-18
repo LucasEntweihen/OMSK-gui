@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mente em Teia</title>
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body data-pane="editor">
+<header id="top">
+  <div class="brand"><span class="brand-mark" aria-hidden="true">◉</span>Mente em Teia</div>
+  <button id="search-btn" class="search" aria-label="Buscar conhecimento">Buscar conhecimento <kbd>Ctrl K</kbd></button>
+  <div class="top-actions">
+    <button id="new-btn">Nova nota</button>
+    <button id="palette-btn">Comandos <kbd>Ctrl P</kbd></button>
+    <button id="immersive-btn" aria-pressed="false">Teia imersiva <kbd>Ctrl G</kbd></button>
+  </div>
+</header>
+
+<main id="ws">
+  <nav id="explorer" aria-label="Explorer"><div class="pane-title">Explorer</div><div id="tree"></div></nav>
+
+  <section id="editor" aria-label="Editor">
+    <div class="ed-bar">
+      <div class="ed-title"><span id="ed-title">Nenhuma nota aberta</span><span id="ed-trust"></span></div>
+      <div class="ed-actions">
+        <button id="mode-btn" hidden>Editar</button>
+        <button id="save-btn" class="primary" hidden disabled>Salvar</button>
+      </div>
+    </div>
+    <div id="empty" class="empty">
+      <p>Escolha uma nota no Explorer ou toque num ponto da teia.</p>
+      <p class="muted">Clique seleciona um nó. Duplo clique abre o documento.</p>
+    </div>
+    <textarea id="raw" spellcheck="false" hidden aria-label="Conteúdo Markdown da nota"></textarea>
+    <article id="preview" hidden></article>
+  </section>
+
+  <aside id="context" aria-label="Painel de contexto">
+    <div class="tabs" role="tablist">
+      <button role="tab" data-tab="ctx" aria-selected="true">Contexto</button>
+      <button role="tab" data-tab="agent" aria-selected="false">Agente</button>
+      <button role="tab" data-tab="time" aria-selected="false">Timeline</button>
+      <button role="tab" data-tab="prop" aria-selected="false">Propostas<b id="prop-count"></b></button>
+    </div>
+    <div id="tab-body"></div>
+  </aside>
+</main>
+
+<section id="web" aria-label="Knowledge Web">
+  <canvas id="canvas" tabindex="0" role="img" aria-label="Grafo do conhecimento. A lista de relações do nó selecionado está no painel Contexto."></canvas>
+  <div class="web-bar">
+    <div class="legend" aria-label="Legenda">
+      <span><i class="g">●</i>verificado</span><span><i class="g ai">✦</i>gerado por IA</span><span><i class="g warn">◌</i>não verificado</span>
+      <span><i class="g bad">!</i>conflito</span><span><i class="g hub">◉</i>hub</span><span><i class="g faint">◌</i>pendente</span>
+    </div>
+    <div class="web-actions">
+      <button id="focus-btn" aria-pressed="true">Foco</button>
+      <button id="fit-btn">Ajustar</button>
+      <button id="clear-hl-btn" hidden>Limpar destaque</button>
+    </div>
+  </div>
+</section>
+
+<nav id="mobile-nav" aria-label="Painéis">
+  <button data-pane="explorer">Explorer</button><button data-pane="web">Teia</button>
+  <button data-pane="editor">Editor</button><button data-pane="context">Contexto</button>
+</nav>
+
+<div id="palette" hidden><div class="pal-box" role="dialog" aria-modal="true" aria-label="Paleta">
+  <input id="pal-input" autocomplete="off" aria-label="Buscar"><ul id="pal-list" role="listbox"></ul>
+</div></div>
+
+<dialog id="new-dlg">
+  <h3>Nova nota</h3>
+  <label>Título<input id="new-title" autocomplete="off"></label>
+  <label>Tipo<select id="new-type">
+    <option>concept</option><option>project</option><option>technology</option><option>language</option><option>decision</option>
+    <option>problem</option><option>solution</option><option>idea</option><option>person</option><option>reference</option><option>task</option>
+  </select></label>
+  <div class="dlg-actions"><button id="new-cancel">Cancelar</button><button id="new-ok" class="primary">Criar nota</button></div>
+</dialog>
+
+<div id="hover" hidden></div>
+<script type="module" src="/app.js"></script>
+</body>
+</html>

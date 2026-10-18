@@ -1,0 +1,97 @@
+/**
+ * Oh My Shark — Design System Tokens
+ * Deep Ocean Interface Specification v1.0
+ */
+
+:root {
+  /* Color primitives */
+  --ocean-950: #020A16; /* Fundo principal */
+  --ocean-900: #061326; /* Painéis e áreas de trabalho */
+  --ocean-850: #091A31; /* Cards e superfícies elevadas */
+  --ocean-800: #102641; /* Hover, seleção suave e superfícies ativas */
+  --ocean-750: #143054;
+  --ocean-700: #193d6b;
+
+  /* Interaction Blue */
+  --blue-500: #2678FF;  /* Ação primária, seleção, foco */
+  --blue-400: #48A5FF;  /* Destaques, ícones ativos, pequenos realces */
+  --blue-600: #1c61d9;
+  --blue-selected: #163B70; /* Fundo de seleção suave */
+  --blue-glow: rgba(38, 120, 255, 0.25);
+
+  /* Semantic Colors */
+  --color-bg: var(--ocean-950);
+  --color-surface: var(--ocean-900);
+  --color-surface-raised: var(--ocean-850);
+  --color-surface-hover: var(--ocean-800);
+  --color-text: #E8F1FF;
+  --color-text-secondary: #9CB4D4;
+  --color-text-muted: #6985A9;
+  --color-border: #173353;
+  --color-border-subtle: #173353;
+  --color-border-hover: #264a75;
+  --color-focus: var(--blue-500);
+  --color-primary: var(--blue-500);
+
+  /* States */
+  --state-success: #35D39A;
+  --state-success-bg: rgba(53, 211, 154, 0.12);
+  --state-warning: #F4B84A;
+  --state-warning-bg: rgba(244, 184, 74, 0.12);
+  --state-danger: #FF637D;
+  --state-danger-bg: rgba(255, 99, 125, 0.12);
+  --state-info: #48A5FF;
+  --state-info-bg: rgba(72, 165, 255, 0.12);
+
+  /* Typography */
+  --font-ui: "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-code: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  --text-xs: 11px;
+  --text-sm: 12px;
+  --text-md: 14px;
+  --text-lg: 16px;
+  --text-xl: 18px;
+  --text-2xl: 24px;
+  --text-display: 28px;
+
+  /* Spacing (4px base) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* Geometry / Border Radii */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
+
+  /* Shadows & Depth */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.25);
+  --shadow-panel: 0 8px 28px rgba(0, 0, 0, 0.35);
+  --shadow-dialog: 0 20px 64px rgba(0, 0, 0, 0.65);
+  --glow-focus: 0 0 0 2px rgba(38, 120, 255, 0.25);
+  --glow-accent: 0 0 16px rgba(38, 120, 255, 0.25);
+
+  /* Transitions & Animation */
+  --duration-fast: 140ms;
+  --duration-normal: 200ms;
+  --duration-slow: 240ms;
+  --ease-out: cubic-bezier(0.2, 0, 0, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Layout dimensions */
+  --topbar-height: 40px;
+  --sidebar-width: 280px;
+  --sidebar-width-collapsed: 68px;
+  --inspector-width: 310px;
+  --statusbar-height: 28px;
+}

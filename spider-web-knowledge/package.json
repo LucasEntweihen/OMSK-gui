@@ -1,0 +1,54 @@
+// Renderizador Markdown mínimo e seguro (escapa HTML antes de qualquer formatação) com wikilinks, relações e tags.
+const ENT = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+export const esc = s => String(s).replace(/[&<>"']/g, c => ENT[c]);
+const unesc = s => s.replace(/&(amp|lt|gt|quot|#39);/g, (_, k) => ({ amp: '&', lt: '<', gt: '>', quot: '"', '#39': "'" }[k]));
+
+export function renderMarkdown(raw, exists = () => true) {
+  const inline = text => {
+    let t = esc(text);
+    const codes = [];
+    t = t.replace(/`([^`]+)`/g, (_, c) => `\u0000${codes.push(c) - 1}\u0000`);
+    t = t.replace(/^([\p{L}][\p{L}\p{N}_-]*)::\s+/u, (_, r) => `<span class="rel">${r} →</span> `);
+    t = t.replace(/\[\[([^\]|#]+)(?:#[^\]|]*)?(?:\|([^\]]*))?\]\]/g, (_, ref, alias) => {
+      const r = unesc(ref).trim();
+      return `<a class="wl${exists(r) ? '' : ' ghost'}" data-ref="${encodeURIComponent(r)}" tabindex="0">${alias || ref.trim()}</a>`;
+    });
+    t = t.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>').replace(/\*([^*\s][^*]*)\*/g, '<em>$1</em>');
+    t = t.replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+    t = t.replace(/(^|\s)#([\p{L}][\p{L}\p{N}_/-]*)/gu, '$1<span class="tag">#$2</span>');
+    t = t.replace(/✦/g, '<span class="ai-mark" title="gerado por IA">✦</span>');
+    return t.replace(/\u0000(\d+)\u0000/g, (_, i) => `<code>${codes[i]}</code>`);
+  };
+  const props = fm => {
+    const rows = []; let last = null;
+    for (const l of fm.split('\n')) {
+      const it = l.match(/^\s+-\s+(.*)$/), kv = l.match(/^([\w-]+):\s*(.*)$/);
+      if (it && last) last[1] += (last[1] ? ', ' : '') + it[1];
+      else if (kv) rows.push((last = [kv[1], kv[2]]));
+    }
+    return `<table class="props">${rows.map(([k, v]) => `<tr><td>${esc(k)}</td><td>${esc(v)}</td></tr>`).join('')}</table>`;
+  };
+
+  let head = '', body = raw;
+  const m = raw.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?/);
+  if (m) { head = props(m[1]); body = raw.slice(m[0].length); }
+  const out = []; let list = null, para = [], code = null;
+  const flush = () => { if (para.length) { out.push(`<p>${inline(para.join(' '))}</p>`); para = []; } };
+  const close = () => { if (list) { out.push(`</${list}>`); list = null; } };
+  const open = tag => { if (list !== tag) { close(); out.push(`<${tag}>`); list = tag; } };
+  for (const line of body.split('\n')) {
+    if (code !== null) { if (/^```/.test(line)) { out.push(`<pre><code>${esc(code.join('\n'))}</code></pre>`); code = null; } else code.push(line); continue; }
+    let h;
+    if (/^```/.test(line)) { flush(); close(); code = []; }
+    else if ((h = line.match(/^(#{1,6})\s+(.*)$/))) { flush(); close(); out.push(`<h${h[1].length}>${inline(h[2])}</h${h[1].length}>`); }
+    else if (/^\s*[-*]\s+/.test(line)) { flush(); open('ul'); out.push(`<li>${inline(line.replace(/^\s*[-*]\s+/, ''))}</li>`); }
+    else if (/^\s*\d+\.\s+/.test(line)) { flush(); open('ol'); out.push(`<li>${inline(line.replace(/^\s*\d+\.\s+/, ''))}</li>`); }
+    else if (/^>\s?/.test(line)) { flush(); close(); out.push(`<blockquote>${inline(line.replace(/^>\s?/, ''))}</blockquote>`); }
+    else if (/^---+\s*$/.test(line)) { flush(); close(); out.push('<hr>'); }
+    else if (!line.trim()) { flush(); close(); }
+    else para.push(line.trim());
+  }
+  if (code !== null) out.push(`<pre><code>${esc(code.join('\n'))}</code></pre>`);
+  flush(); close();
+  return head + out.join('\n');
+}
