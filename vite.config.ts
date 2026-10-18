@@ -301,7 +301,7 @@ function localFsPlugin(): Plugin {
       server.middlewares.use(async (req, res, next) => {
         const urlStr = req.url || "";
 
-        // 1. Endpoints da Mente em Teia
+        // 1. Endpoints da Mente em Teia (/api/teia)
         if (urlStr.startsWith("/api/teia")) {
           const u = new URL(urlStr, "http://localhost:5173");
           res.setHeader("Content-Type", "application/json");
@@ -310,13 +310,14 @@ function localFsPlugin(): Plugin {
           if (u.pathname === "/api/teia/vault-info") {
             const vault = ensureTeiaVault(teiaVaultDir);
             const graph = buildGraph(vault);
+            const ghosts = graph.nodes.filter((n) => n.ghost).length;
+            const real = graph.nodes.length - ghosts;
             res.statusCode = 200;
             res.end(
               JSON.stringify({
-                success: true,
                 vaultPath: vault,
-                totalNotes: graph.nodes.filter((n) => !n.ghost).length,
-                totalGhosts: graph.nodes.filter((n) => n.ghost).length,
+                totalNotes: real,
+                totalGhosts: ghosts,
                 totalEdges: graph.edges.length,
               })
             );
@@ -326,70 +327,85 @@ function localFsPlugin(): Plugin {
           // Alterar caminho do Vault
           if (u.pathname === "/api/teia/set-vault" && req.method === "POST") {
             const body = await readJsonBody(req);
-            if (body && typeof body.path === "string" && body.path.trim()) {
-              teiaVaultDir = ensureTeiaVault(body.path.trim());
-              res.statusCode = 200;
-              res.end(JSON.stringify({ success: true, vaultPath: teiaVaultDir }));
-            } else {
+            const newPath = String(body.path || "").trim();
+            if (!newPath) {
               res.statusCode = 400;
               res.end(JSON.stringify({ success: false, error: "Caminho inválido" }));
+              return;
+            }
+            try {
+              teiaVaultDir = ensureTeiaVault(newPath);
+              res.statusCode = 200;
+              res.end(JSON.stringify({ success: true, vaultPath: teiaVaultDir }));
+            } catch (err: unknown) {
+              res.statusCode = 500;
+              res.end(JSON.stringify({ success: false, error: err instanceof Error ? err.message : "Erro ao alterar pasta" }));
             }
             return;
           }
 
-          // Grafo completo
+          // Obter o Grafo Completo
           if (u.pathname === "/api/teia/graph") {
             const vault = ensureTeiaVault(teiaVaultDir);
             const graph = buildGraph(vault);
             res.statusCode = 200;
-            res.end(JSON.stringify({ success: true, ...graph }));
+            res.end(JSON.stringify(graph));
             return;
           }
 
-          // Ler nó específico
+          // Obter uma Nota específica
           if (u.pathname.startsWith("/api/teia/node/") && req.method === "GET") {
-            const nodeId = decodeURIComponent(u.pathname.replace("/api/teia/node/", ""));
+            const id = decodeURIComponent(u.pathname.slice("/api/teia/node/".length));
             const vault = ensureTeiaVault(teiaVaultDir);
-            const graph = buildGraph(vault);
-            const target = graph.nodes.find((n) => n.id === nodeId || toSlug(n.title) === toSlug(nodeId));
+            const nodes = scanVault(vault);
+            const found = nodes.find((n) => n.id === id || toSlug(n.title) === toSlug(id));
 
-            if (target) {
+            if (found) {
+              // Constrói relações de saída e backlinks
+              const graph = buildGraph(vault);
               const outgoing = graph.edges
-                .filter((e) => e.source === target.id)
+                .filter((e) => e.source === found.id)
                 .map((e) => {
-                  const nodeObj = graph.nodes.find((n) => n.id === e.target);
-                  return { id: e.target, title: nodeObj?.title || e.target, relation: e.relation, ai: e.ai };
-                });
-              const backlinks = graph.edges
-                .filter((e) => e.target === target.id)
-                .map((e) => {
-                  const nodeObj = graph.nodes.find((n) => n.id === e.source);
-                  return { id: e.source, title: nodeObj?.title || e.source, relation: e.relation, ai: e.ai };
+                  const targetNode = graph.nodes.find((n) => n.id === e.target);
+                  return { id: e.target, title: targetNode ? targetNode.title : e.target, relation: e.relation, ai: e.ai };
                 });
 
-              target.outgoing = outgoing;
-              target.backlinks = backlinks;
+              const backlinks = graph.edges
+                .filter((e) => e.target === found.id)
+                .map((e) => {
+                  const sourceNode = graph.nodes.find((n) => n.id === e.source);
+                  return { id: e.source, title: sourceNode ? sourceNode.title : e.source, relation: e.relation, ai: e.ai };
+                });
+
+              found.outgoing = outgoing;
+              found.backlinks = backlinks;
 
               res.statusCode = 200;
-              res.end(JSON.stringify({ success: true, node: target }));
+              res.end(JSON.stringify({ success: true, node: found }));
             } else {
               res.statusCode = 404;
-              res.end(JSON.stringify({ success: false, error: "Nó não encontrado" }));
+              res.end(JSON.stringify({ success: false, error: "Nota não encontrada" }));
             }
             return;
           }
 
-          // Criar novo nó / nota Markdown no Vault
+          // Criar uma nova Nota
           if (u.pathname === "/api/teia/node" && req.method === "POST") {
             const body = await readJsonBody(req);
-            const title = String(body.title || "Nova Nota").trim();
+            const title = String(body.title || "").trim();
+            if (!title) {
+              res.statusCode = 400;
+              res.end(JSON.stringify({ success: false, error: "Título obrigatório" }));
+              return;
+            }
+
             const type = String(body.type || "concept").trim();
             const id = toSlug(title);
             const vault = ensureTeiaVault(teiaVaultDir);
             const filePath = path.join(vault, `${id}.md`);
             const today = new Date().toISOString().slice(0, 10);
 
-            const rawContent =
+            const initialContent =
               `---\n` +
               `id: ${id}\n` +
               `title: ${title}\n` +
@@ -399,51 +415,49 @@ function localFsPlugin(): Plugin {
               `tags: [${Array.isArray(body.tags) ? body.tags.join(", ") : ""}]\n` +
               `confidence: ${body.confidence ?? 1.0}\n` +
               `source: ${body.source || "user"}\n` +
-              `verified: ${body.verified ?? true}\n` +
+              `verified: true\n` +
               `---\n\n` +
               `# ${title}\n\n` +
-              (body.body ? `${body.body}\n` : `Escreva suas anotações aqui...\n`);
+              `${body.body || ""}\n`;
 
-            await fs.writeFile(filePath, rawContent, "utf8");
-            res.statusCode = 200;
-            res.end(JSON.stringify({ success: true, id, path: `${id}.md`, raw: rawContent }));
+            await fs.writeFile(filePath, initialContent, "utf8");
+            res.statusCode = 201;
+            res.end(JSON.stringify({ success: true, id, path: filePath, raw: initialContent }));
             return;
           }
 
-          // Atualizar nó existente
+          // Atualizar Nota existente
           if (u.pathname.startsWith("/api/teia/node/") && req.method === "PUT") {
-            const nodeId = decodeURIComponent(u.pathname.replace("/api/teia/node/", ""));
+            const id = decodeURIComponent(u.pathname.slice("/api/teia/node/".length));
             const body = await readJsonBody(req);
             const vault = ensureTeiaVault(teiaVaultDir);
-            const graph = buildGraph(vault);
-            const target = graph.nodes.find((n) => n.id === nodeId);
+            const nodes = scanVault(vault);
+            const target = nodes.find((n) => n.id === id);
 
             if (target && target.path) {
               const fullPath = path.join(vault, target.path);
-              const newRaw = String(body.raw || target.raw);
-              await fs.writeFile(fullPath, newRaw, "utf8");
+              await fs.writeFile(fullPath, String(body.raw || ""), "utf8");
               res.statusCode = 200;
-              res.end(JSON.stringify({ success: true, id: nodeId }));
+              res.end(JSON.stringify({ success: true }));
             } else {
               res.statusCode = 404;
-              res.end(JSON.stringify({ success: false, error: "Nó não encontrado para atualização" }));
+              res.end(JSON.stringify({ success: false, error: "Nota não encontrada para atualizar" }));
             }
             return;
           }
 
-          // Deletar nó
+          // Excluir Nota
           if (u.pathname.startsWith("/api/teia/node/") && req.method === "DELETE") {
-            const nodeId = decodeURIComponent(u.pathname.replace("/api/teia/node/", ""));
+            const id = decodeURIComponent(u.pathname.slice("/api/teia/node/".length));
             const vault = ensureTeiaVault(teiaVaultDir);
-            const graph = buildGraph(vault);
-            const target = graph.nodes.find((n) => n.id === nodeId);
+            const nodes = scanVault(vault);
+            const target = nodes.find((n) => n.id === id);
 
             if (target && target.path) {
               const fullPath = path.join(vault, target.path);
-              const trashPath = path.join(vault, ".teia", "trash", path.basename(target.path));
-              await fs.rename(fullPath, trashPath);
+              await fs.unlink(fullPath);
               res.statusCode = 200;
-              res.end(JSON.stringify({ success: true, deleted: nodeId }));
+              res.end(JSON.stringify({ success: true }));
             } else {
               res.statusCode = 404;
               res.end(JSON.stringify({ success: false, error: "Nó não encontrado" }));
@@ -480,6 +494,29 @@ function localFsPlugin(): Plugin {
             await fs.writeFile(filePath, rawContent, "utf8");
             res.statusCode = 200;
             res.end(JSON.stringify({ success: true, id, message: `Memória '${title}' salva no Desktop Vault.` }));
+            return;
+          }
+
+          // Salvar Obsidian JSON Canvas (.canvas) diretamente no Desktop Vault
+          if (u.pathname === "/api/teia/save-canvas" && req.method === "POST") {
+            const body = await readJsonBody(req);
+            const vault = ensureTeiaVault(teiaVaultDir);
+            const canvasPath = path.join(vault, "mente-em-teia.canvas");
+            const content = JSON.stringify(body.canvas || {}, null, 2);
+            await fs.writeFile(canvasPath, content, "utf8");
+            res.statusCode = 200;
+            res.end(JSON.stringify({ success: true, filePath: canvasPath }));
+            return;
+          }
+
+          // Salvar GRAPH_REPORT.md diretamente no Desktop Vault
+          if (u.pathname === "/api/teia/save-report" && req.method === "POST") {
+            const body = await readJsonBody(req);
+            const vault = ensureTeiaVault(teiaVaultDir);
+            const reportPath = path.join(vault, "GRAPH_REPORT.md");
+            await fs.writeFile(reportPath, String(body.markdown || ""), "utf8");
+            res.statusCode = 200;
+            res.end(JSON.stringify({ success: true, filePath: reportPath }));
             return;
           }
 

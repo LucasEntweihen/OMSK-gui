@@ -17,6 +17,8 @@ export interface TeiaWorkspaceHeaderProps {
   onTypeFilterChange: (type: TeiaNodeType | "all") => void;
   physicsRunning: boolean;
   onTogglePhysics: () => void;
+  communitiesCount?: number;
+  averageCohesion?: number;
 }
 
 const TYPE_COLOR_MAP: Record<string, string> = {
@@ -48,6 +50,8 @@ export const TeiaWorkspaceHeader: React.FC<TeiaWorkspaceHeaderProps> = ({
   onTypeFilterChange,
   physicsRunning,
   onTogglePhysics,
+  communitiesCount,
+  averageCohesion,
 }) => {
   return (
     <header
@@ -173,8 +177,32 @@ export const TeiaWorkspaceHeader: React.FC<TeiaWorkspaceHeaderProps> = ({
                 fontWeight: 600,
               }}
             >
-              VISÃO GLOBAL
+              GRAPHIFY ENGINE
             </span>
+
+            {communitiesCount !== undefined && communitiesCount > 0 && (
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  padding: "2px 8px",
+                  borderRadius: "var(--teia-r-full)",
+                  backgroundColor: "var(--teia-p1)",
+                  border: "1px solid var(--teia-line)",
+                  fontSize: "10px",
+                  fontFamily: "var(--teia-font-mono)",
+                  color: "var(--teia-muted)",
+                }}
+              >
+                <span style={{ color: "var(--teia-accent)" }}>●</span>
+                <span>{communitiesCount} clusters</span>
+                <span style={{ color: "var(--teia-faint)" }}>•</span>
+                <span style={{ color: "var(--teia-trust-verified)" }}>
+                  {Math.round((averageCohesion || 0) * 100)}% coesão
+                </span>
+              </div>
+            )}
           </div>
         )}
       </div>

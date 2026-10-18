@@ -1,10 +1,11 @@
 import React from "react";
-import { type TeiaNode, type TeiaEdge, type TeiaNodeType, stepTeiaPhysics } from "@/services/teiaEngine";
+import { type TeiaNode, type TeiaEdge, type TeiaNodeType, type GraphifyCommunity, stepTeiaPhysics } from "@/services/teiaEngine";
 import { PlusIcon, WebNetIcon } from "@/components/icons";
 
 export interface TeiaCanvasProps {
   nodes: TeiaNode[];
   edges: TeiaEdge[];
+  communities?: GraphifyCommunity[];
   activeId?: string | null;
   onSelect?: (id: string) => void;
   onOpen?: (id: string) => void;
@@ -30,6 +31,7 @@ const TEIA_COLOR_MAP: Record<string, string> = {
 export const TeiaCanvas: React.FC<TeiaCanvasProps> = ({
   nodes,
   edges,
+  communities = [],
   activeId,
   onSelect,
   onOpen,
@@ -65,6 +67,15 @@ export const TeiaCanvas: React.FC<TeiaCanvasProps> = ({
     orbitPulse: 0,
   });
 
+  // Mapeia comunidades por ID
+  const communityColorMap = React.useMemo(() => {
+    const map = new Map<number, string>();
+    for (const c of communities) {
+      map.set(c.id, c.color);
+    }
+    return map;
+  }, [communities]);
+
   // Atualiza nós e arestas quando dados mudam
   React.useEffect(() => {
     const s = stateRef.current;
@@ -84,7 +95,7 @@ export const TeiaCanvas: React.FC<TeiaCanvasProps> = ({
         vx: 0,
         vy: 0,
         pinned: old?.pinned ?? false,
-        r: (n.ghost ? 4.5 : 7.0) + Math.sqrt(n.degree || 0) * 2.4 + (n.hub ? 5.0 : 0),
+        r: (n.ghost ? 4.5 : 7.0) + Math.sqrt(n.degree || 0) * 2.4 + (n.hub ? 5.0 : 0) + (n.isGodNode ? 3.0 : 0),
       };
       newMap.set(n.id, nodeObj);
       return nodeObj;
@@ -178,11 +189,12 @@ export const TeiaCanvas: React.FC<TeiaCanvasProps> = ({
       ctx.translate(s.w / 2 + s.cam.x, s.h / 2 + s.cam.y);
       ctx.scale(s.cam.k, s.cam.k);
 
-      // 2. Arestas (Conexões Sinápticas da Teia)
+      // 2. Arestas (Conexões Sinápticas da Teia com Destaque para Pontes)
       for (const e of s.localEdges) {
         if (!e.s || !e.t) continue;
         const isConnectedToActive = e.source === activeId || e.target === activeId;
         const isHovered = e.source === s.hoverId || e.target === s.hoverId;
+        const isBridge = e.isCrossCommunity || (e.surpriseScore !== undefined && e.surpriseScore >= 40);
 
         const isFilteredOut =
           typeFilter !== "all" && e.s.type !== typeFilter && e.t.type !== typeFilter;
@@ -191,7 +203,16 @@ export const TeiaCanvas: React.FC<TeiaCanvasProps> = ({
         ctx.moveTo(e.s.x!, e.s.y!);
         ctx.lineTo(e.t.x!, e.t.y!);
 
-        if (e.ai) {
+        if (isBridge) {
+          // Ponte inter-comunitária (Surprising Connection)
+          ctx.setLineDash([6, 3]);
+          ctx.strokeStyle = isConnectedToActive
+            ? "#FFB86C"
+            : isHovered
+            ? "rgba(255, 184, 108, 0.9)"
+            : "rgba(255, 184, 108, 0.45)";
+          ctx.lineWidth = isConnectedToActive ? 2.5 : 1.5;
+        } else if (e.ai) {
           ctx.setLineDash([4, 4]);
           ctx.strokeStyle = isConnectedToActive
             ? "#C678DD"
@@ -214,15 +235,16 @@ export const TeiaCanvas: React.FC<TeiaCanvasProps> = ({
         ctx.stroke();
         ctx.setLineDash([]);
 
-        // Rótulo da relação se zoom estiver ampliado
-        if (s.cam.k > 1.25 && (isConnectedToActive || isHovered) && !isFilteredOut) {
+        // Rótulo da relação se zoom estiver ampliado ou se for ponte
+        if ((s.cam.k > 1.2 || isBridge) && (isConnectedToActive || isHovered) && !isFilteredOut) {
           const mx = (e.s.x! + e.t.x!) / 2;
           const my = (e.s.y! + e.t.y!) / 2;
           ctx.font = "10px 'JetBrains Mono', monospace";
-          ctx.fillStyle = isConnectedToActive ? "#B8C0FF" : "#828B9C";
+          ctx.fillStyle = isBridge ? "#FFB86C" : isConnectedToActive ? "#B8C0FF" : "#828B9C";
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
-          ctx.fillText(e.relation + (e.ai ? " ✦" : ""), mx, my - 6);
+          const label = (e.relation || "") + (isBridge ? " ⚡" : e.ai ? " ✦" : "");
+          ctx.fillText(label, mx, my - 6);
         }
       }
 
@@ -233,35 +255,54 @@ export const TeiaCanvas: React.FC<TeiaCanvasProps> = ({
         const isDimmed = typeFilter !== "all" && n.type !== typeFilter;
         const color = TEIA_COLOR_MAP[n.type] || (n.ghost ? "#4B535B" : "#7A82E6");
         const radius = n.r || 6;
+        const commColor = n.communityId ? communityColorMap.get(n.communityId) : undefined;
 
         ctx.save();
         if (isDimmed) {
           ctx.globalAlpha = 0.22;
         }
 
+        // Halo de Comunidade Graphify (se o nó pertencer a um cluster)
+        if (commColor && !n.ghost) {
+          ctx.beginPath();
+          ctx.arc(n.x!, n.y!, radius * 2.2, 0, Math.PI * 2);
+          ctx.fillStyle = `${commColor}14`;
+          ctx.fill();
+        }
+
         // Brilho de aura cósmica (Radial Glow)
-        if (isAct || isHov || n.hub) {
+        if (isAct || isHov || n.hub || n.isGodNode) {
+          const auraColor = n.isGodNode ? "#FFB86C" : color;
           const aura = ctx.createRadialGradient(n.x!, n.y!, radius * 0.5, n.x!, n.y!, radius * 2.8);
-          aura.addColorStop(0, `${color}45`);
-          aura.addColorStop(1, `${color}00`);
+          aura.addColorStop(0, `${auraColor}45`);
+          aura.addColorStop(1, `${auraColor}00`);
           ctx.fillStyle = aura;
           ctx.beginPath();
           ctx.arc(n.x!, n.y!, radius * 2.8, 0, Math.PI * 2);
           ctx.fill();
         }
 
-        // Hub orbital estelar (Halo duplo)
-        if (n.hub) {
+        // God Node — Anel estelar dourado pulsante
+        if (n.isGodNode) {
+          const pulseOffset = Math.sin(s.orbitPulse) * 2;
+          ctx.beginPath();
+          ctx.arc(n.x!, n.y!, radius + 6 + pulseOffset, 0, Math.PI * 2);
+          ctx.strokeStyle = "rgba(255, 184, 108, 0.75)";
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+
+          ctx.beginPath();
+          ctx.arc(n.x!, n.y!, radius + 11 - pulseOffset, 0, Math.PI * 2);
+          ctx.strokeStyle = "rgba(255, 184, 108, 0.25)";
+          ctx.lineWidth = 1;
+          ctx.stroke();
+        } else if (n.hub) {
+          // Hub orbital estelar comum
           const pulseOffset = Math.sin(s.orbitPulse) * 1.6;
           ctx.beginPath();
           ctx.arc(n.x!, n.y!, radius + 5 + pulseOffset, 0, Math.PI * 2);
           ctx.strokeStyle = isAct ? "rgba(148, 155, 242, 0.85)" : "rgba(184, 192, 255, 0.35)";
           ctx.lineWidth = 1;
-          ctx.stroke();
-
-          ctx.beginPath();
-          ctx.arc(n.x!, n.y!, radius + 9 - pulseOffset, 0, Math.PI * 2);
-          ctx.strokeStyle = "rgba(122, 130, 230, 0.18)";
           ctx.stroke();
         }
 
@@ -293,8 +334,8 @@ export const TeiaCanvas: React.FC<TeiaCanvasProps> = ({
         }
 
         // Etiqueta do nó
-        ctx.font = `${isAct ? "bold " : ""}${Math.max(10, Math.min(13, 11 / Math.sqrt(s.cam.k)))}px 'Inter', sans-serif`;
-        ctx.fillStyle = isAct ? "#FFFFFF" : isHov ? "#F4F6FC" : n.ghost ? "#828B9C" : "#D2D5E2";
+        ctx.font = `${isAct || n.isGodNode ? "bold " : ""}${Math.max(10, Math.min(13, 11 / Math.sqrt(s.cam.k)))}px 'Inter', sans-serif`;
+        ctx.fillStyle = isAct ? "#FFFFFF" : n.isGodNode ? "#FFB86C" : isHov ? "#F4F6FC" : n.ghost ? "#828B9C" : "#D2D5E2";
         ctx.textAlign = "center";
         ctx.textBaseline = "top";
         ctx.fillText(n.title, n.x!, n.y! + radius + 5);
@@ -313,7 +354,7 @@ export const TeiaCanvas: React.FC<TeiaCanvasProps> = ({
       cancelAnimationFrame(stateRef.current.raf);
       observer.disconnect();
     };
-  }, [activeId, typeFilter, physicsRunning]);
+  }, [activeId, typeFilter, physicsRunning, communityColorMap]);
 
   // Interatividade com pointer events
   React.useEffect(() => {
@@ -609,7 +650,7 @@ export const TeiaCanvas: React.FC<TeiaCanvasProps> = ({
               </span>
               <span style={{ display: "flex", alignItems: "center", gap: "5px" }}>
                 <span style={{ width: "7px", height: "7px", borderRadius: "50%", backgroundColor: "#FFB86C" }} />
-                Decisão
+                Decisão / Ponte
               </span>
               <span style={{ display: "flex", alignItems: "center", gap: "5px" }}>
                 <span style={{ width: "7px", height: "7px", borderRadius: "50%", backgroundColor: "#65DCA2" }} />

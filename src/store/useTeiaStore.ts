@@ -9,18 +9,25 @@ import {
   apiDeleteNode,
   apiSaveMemory,
   apiGetTeiaContext,
+  apiSaveObsidianCanvas,
+  apiSaveGraphReport,
+  runGraphifyPipeline,
   type TeiaGraph,
   type TeiaNode,
   type TeiaNodeType,
   type VaultInfo,
+  type GraphifyPipelineResult,
+  type GraphifyNode,
+  type GraphifyEdge,
 } from "@/services/teiaEngine";
 
 export type TeiaViewMode = "split" | "graph" | "editor" | "preview";
-export type TeiaContextTab = "ctx" | "agent" | "time" | "prop";
+export type TeiaContextTab = "ctx" | "agent" | "prop" | "graphify";
 
 interface TeiaState {
   vaultInfo: VaultInfo | null;
   graph: TeiaGraph;
+  pipelineResult: GraphifyPipelineResult | null;
   activeNode: TeiaNode | null;
   selectedNodeId: string | null;
   viewMode: TeiaViewMode;
@@ -44,11 +51,19 @@ interface TeiaState {
   setDraftContent: (content: string) => void;
   requestAgentContext: (query?: string) => Promise<void>;
   recordAIMemory: (title: string, content: string, type?: "memory" | "preference" | "decision") => Promise<string>;
+
+  // Ações do Motor Graphify
+  runGraphifyAnalysis: () => Promise<GraphifyPipelineResult | null>;
+  exportObsidianCanvas: () => Promise<string>;
+  exportGraphReport: () => Promise<string>;
+  downloadCanvasJson: () => void;
+  downloadGraphReport: () => void;
 }
 
 export const useTeiaStore = create<TeiaState>((set, get) => ({
   vaultInfo: null,
   graph: { nodes: [], edges: [], conflicts: [], revision: 0 },
+  pipelineResult: null,
   activeNode: null,
   selectedNodeId: null,
   viewMode: "split",
@@ -64,12 +79,29 @@ export const useTeiaStore = create<TeiaState>((set, get) => ({
     try {
       const [info, graphData] = await Promise.all([
         apiGetVaultInfo().catch(() => null),
-        apiGetGraph().catch(() => ({ nodes: [], edges: [], conflicts: [], revision: 0 })),
+        apiGetGraph().catch((): TeiaGraph => ({ nodes: [], edges: [], conflicts: [], revision: 0 })),
       ]);
+
+      // Processa pipeline Graphify localmente se necessário
+      const pipeline =
+        graphData.pipelineResult ||
+        runGraphifyPipeline(
+          graphData.nodes as GraphifyNode[],
+          graphData.edges as GraphifyEdge[],
+          info?.vaultPath
+        );
 
       set({
         vaultInfo: info,
-        graph: graphData,
+        graph: {
+          ...graphData,
+          pipelineResult: pipeline,
+          communities: pipeline.communities,
+          godNodes: pipeline.report.godNodes,
+          surprisingConnections: pipeline.report.surprisingConnections,
+          suggestedQuestions: pipeline.report.suggestedQuestions,
+        },
+        pipelineResult: pipeline,
         isLoading: false,
       });
 
@@ -190,5 +222,83 @@ export const useTeiaStore = create<TeiaState>((set, get) => ({
     const msg = await apiSaveMemory({ title, content, type });
     await get().loadVault();
     return msg;
+  },
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // AÇÕES GRAPHIFY-GRADE
+  // ─────────────────────────────────────────────────────────────────────────
+
+  runGraphifyAnalysis: async () => {
+    const { graph, vaultInfo } = get();
+    set({ isLoading: true });
+    try {
+      const pipeline = runGraphifyPipeline(
+        graph.nodes as GraphifyNode[],
+        graph.edges as GraphifyEdge[],
+        vaultInfo?.vaultPath
+      );
+
+      set({
+        pipelineResult: pipeline,
+        graph: {
+          ...graph,
+          nodes: pipeline.nodes,
+          edges: pipeline.edges,
+          communities: pipeline.communities,
+          godNodes: pipeline.report.godNodes,
+          surprisingConnections: pipeline.report.surprisingConnections,
+          suggestedQuestions: pipeline.report.suggestedQuestions,
+          pipelineResult: pipeline,
+        },
+        isLoading: false,
+      });
+
+      return pipeline;
+    } catch {
+      set({ isLoading: false });
+      return null;
+    }
+  },
+
+  exportObsidianCanvas: async () => {
+    const pipeline = get().pipelineResult || (await get().runGraphifyAnalysis());
+    if (!pipeline) throw new Error("Falha ao gerar dados do Canvas");
+    const res = await apiSaveObsidianCanvas(pipeline.canvasData);
+    return res.filePath;
+  },
+
+  exportGraphReport: async () => {
+    const pipeline = get().pipelineResult || (await get().runGraphifyAnalysis());
+    if (!pipeline) throw new Error("Falha ao gerar relatório");
+    const res = await apiSaveGraphReport(pipeline.report.markdownReport);
+    return res.filePath;
+  },
+
+  downloadCanvasJson: () => {
+    const pipeline = get().pipelineResult;
+    if (!pipeline) return;
+    const blob = new Blob([JSON.stringify(pipeline.canvasData, null, 2)], {
+      type: "application/json",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "mente-em-teia.canvas";
+    a.click();
+    URL.revokeObjectURL(url);
+  },
+
+  downloadGraphReport: () => {
+    const pipeline = get().pipelineResult;
+    if (!pipeline) return;
+    const blob = new Blob([pipeline.report.markdownReport], {
+      type: "text/markdown;charset=utf-8",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "GRAPH_REPORT.md";
+    a.click();
+    URL.revokeObjectURL(url);
   },
 }));

@@ -1,7 +1,22 @@
 /**
  * Oh My Shark — Mente em Teia Core Engine
- * Parser Markdown, Grafo Force-Directed e Integração Desktop Vault
+ * Integrado com a Arquitetura Graphify (Graphify-Labs/graphify):
+ * Parser Markdown, Grafo Force-Directed, Detecção de Comunidades, God Nodes,
+ * Pontes Surpreendentes, Perguntas Sugeridas e Integração com Desktop Vault.
  */
+
+import {
+  runGraphifyPipeline,
+  type GraphifyNode,
+  type GraphifyEdge,
+  type GraphifyCommunity,
+  type GraphifyGodNode,
+  type GraphifySurprisingConnection,
+  type GraphifySuggestedQuestion,
+  type GraphifyPipelineResult,
+} from "./graphify";
+
+export * from "./graphify";
 
 export type TeiaNodeType = 
   | "concept" 
@@ -49,6 +64,14 @@ export interface TeiaNode {
   outgoing?: Array<{ id: string; title: string; relation: string; ai: boolean }>;
   backlinks?: Array<{ id: string; title: string; relation: string; ai: boolean }>;
   
+  // Atributos enriquecidos pelo Graphify
+  communityId?: number;
+  communityLabel?: string;
+  cohesionScore?: number;
+  inDegree?: number;
+  outDegree?: number;
+  isGodNode?: boolean;
+
   // Coordenadas físicas do Canvas 2D
   x?: number;
   y?: number;
@@ -66,6 +89,13 @@ export interface TeiaEdge {
   s?: TeiaNode;
   t?: TeiaNode;
   bend?: number;
+
+  // Atributos enriquecidos pelo Graphify
+  confidenceLevel?: "EXTRACTED" | "INFERRED" | "AMBIGUOUS";
+  weight?: number;
+  isCrossCommunity?: boolean;
+  surpriseScore?: number;
+  surpriseReasons?: string[];
 }
 
 export interface TeiaGraph {
@@ -73,6 +103,13 @@ export interface TeiaGraph {
   edges: TeiaEdge[];
   conflicts: Array<{ id: string; reason: string }>;
   revision: number;
+
+  // Metadados analíticos da arquitetura Graphify
+  communities?: GraphifyCommunity[];
+  godNodes?: GraphifyGodNode[];
+  surprisingConnections?: GraphifySurprisingConnection[];
+  suggestedQuestions?: GraphifySuggestedQuestion[];
+  pipelineResult?: GraphifyPipelineResult;
 }
 
 export interface VaultInfo {
@@ -307,7 +344,27 @@ export async function apiSetVaultPath(targetPath: string): Promise<string> {
 export async function apiGetGraph(): Promise<TeiaGraph> {
   const res = await fetch("/api/teia/graph");
   if (!res.ok) throw new Error("Falha ao carregar grafo da Teia");
-  return (await res.json()) as TeiaGraph;
+  const rawGraph = (await res.json()) as TeiaGraph;
+
+  // Executa o Pipeline Graphify de 7 estágios sobre os dados
+  try {
+    const pipeline = runGraphifyPipeline(
+      rawGraph.nodes as GraphifyNode[],
+      rawGraph.edges as GraphifyEdge[]
+    );
+    return {
+      ...rawGraph,
+      nodes: pipeline.nodes,
+      edges: pipeline.edges,
+      communities: pipeline.communities,
+      godNodes: pipeline.report.godNodes,
+      surprisingConnections: pipeline.report.surprisingConnections,
+      suggestedQuestions: pipeline.report.suggestedQuestions,
+      pipelineResult: pipeline,
+    };
+  } catch {
+    return rawGraph;
+  }
 }
 
 export async function apiGetNode(id: string): Promise<TeiaNode> {
@@ -374,4 +431,32 @@ export async function apiGetTeiaContext(query = ""): Promise<{ nodesCount: numbe
   const res = await fetch(`/api/teia/context?query=${encodeURIComponent(query)}`);
   if (!res.ok) throw new Error("Falha ao construir contexto da Teia");
   return (await res.json()) as { nodesCount: number; text: string };
+}
+
+/**
+ * Salva o arquivo de Canvas oficial do Obsidian (.canvas) diretamente no Desktop Vault
+ */
+export async function apiSaveObsidianCanvas(canvas: unknown): Promise<{ success: boolean; filePath: string }> {
+  const res = await fetch("/api/teia/save-canvas", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ canvas }),
+  });
+  const data = (await res.json()) as { success: boolean; filePath: string; error?: string };
+  if (!res.ok || !data.success) throw new Error(data.error || "Falha ao salvar Obsidian Canvas");
+  return data;
+}
+
+/**
+ * Salva o relatório GRAPH_REPORT.md diretamente no Desktop Vault
+ */
+export async function apiSaveGraphReport(markdown: string): Promise<{ success: boolean; filePath: string }> {
+  const res = await fetch("/api/teia/save-report", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ markdown }),
+  });
+  const data = (await res.json()) as { success: boolean; filePath: string; error?: string };
+  if (!res.ok || !data.success) throw new Error(data.error || "Falha ao salvar GRAPH_REPORT.md");
+  return data;
 }

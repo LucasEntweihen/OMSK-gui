@@ -17,6 +17,7 @@ export const TeiaPage: React.FC = () => {
   const {
     vaultInfo,
     graph,
+    pipelineResult,
     activeNode,
     selectedNodeId,
     viewMode,
@@ -38,6 +39,11 @@ export const TeiaPage: React.FC = () => {
     setSearchQuery,
     setDraftContent,
     requestAgentContext,
+    runGraphifyAnalysis,
+    exportObsidianCanvas,
+    exportGraphReport,
+    downloadCanvasJson,
+    downloadGraphReport,
   } = useTeiaStore();
 
   const { showNotification } = useAppStore();
@@ -181,7 +187,7 @@ export const TeiaPage: React.FC = () => {
         position: "relative",
       }}
     >
-      {/* 1. HUD Superior Autônomo da Mente em Teia */}
+      {/* 1. HUD Superior Autônomo da Mente em Teia com Telemetria Graphify */}
       <TeiaWorkspaceHeader
         activeNode={activeNode}
         viewMode={viewMode}
@@ -197,6 +203,8 @@ export const TeiaPage: React.FC = () => {
         onTypeFilterChange={setTypeFilter}
         physicsRunning={physicsRunning}
         onTogglePhysics={() => setPhysicsRunning((prev) => !prev)}
+        communitiesCount={graph.communities?.length}
+        averageCohesion={pipelineResult?.report.averageCohesion}
       />
 
       {/* 2. Área Central de Trabalho com Estrutura Modular 3-Pane */}
@@ -249,6 +257,7 @@ export const TeiaPage: React.FC = () => {
             <TeiaCanvas
               nodes={graph.nodes}
               edges={graph.edges}
+              communities={graph.communities}
               activeId={selectedNodeId || activeNode?.id}
               onSelect={(id) => selectNode(id)}
               onOpen={(id) => openNode(id)}
@@ -428,11 +437,11 @@ export const TeiaPage: React.FC = () => {
           )}
         </section>
 
-        {/* Painel Direito: Inspetor Neural de Conhecimento (ocultado se Foco Zen estiver ativo) */}
+        {/* Painel Direito: Inspetor Neural de Conhecimento e Graphify (ocultado se Foco Zen estiver ativo) */}
         {!isZen && (
           <TeiaInspector
             activeNode={activeNode}
-            activeTab={activeContextTab === "prop" ? "prop" : activeContextTab === "agent" ? "agent" : "ctx"}
+            activeTab={activeContextTab}
             onTabChange={(tab) => setActiveContextTab(tab)}
             onOpenNode={(id) => openNode(id)}
             agentQuery={agentQuery}
@@ -440,6 +449,40 @@ export const TeiaPage: React.FC = () => {
             onRequestAgentContext={requestAgentContext}
             agentResult={agentContextResult}
             vaultPath={vaultInfo?.vaultPath || "C:/Users/guerr/Desktop/Mente em Teia"}
+            communities={graph.communities}
+            godNodes={graph.godNodes}
+            surprisingConnections={graph.surprisingConnections}
+            suggestedQuestions={graph.suggestedQuestions}
+            onRunGraphifyAnalysis={async () => {
+              const res = await runGraphifyAnalysis();
+              if (res) {
+                showNotification(`Topologia Graphify recalculada: ${res.communities.length} clusters`, "success");
+              }
+            }}
+            onSaveCanvas={async () => {
+              try {
+                const filePath = await exportObsidianCanvas();
+                showNotification(`Canvas salvo: ${filePath}`, "success");
+              } catch {
+                showNotification("Erro ao salvar mente-em-teia.canvas", "error");
+              }
+            }}
+            onSaveReport={async () => {
+              try {
+                const filePath = await exportGraphReport();
+                showNotification(`Relatório salvo: ${filePath}`, "success");
+              } catch {
+                showNotification("Erro ao salvar GRAPH_REPORT.md", "error");
+              }
+            }}
+            onDownloadCanvas={() => {
+              downloadCanvasJson();
+              showNotification("Download do mente-em-teia.canvas iniciado", "info");
+            }}
+            onDownloadReport={() => {
+              downloadGraphReport();
+              showNotification("Download do GRAPH_REPORT.md iniciado", "info");
+            }}
           />
         )}
       </div>
