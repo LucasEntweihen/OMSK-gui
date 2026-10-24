@@ -142,6 +142,114 @@ function startEmbeddedServer(distDir: string): Promise<number> {
       return;
     }
 
+    // ========================================================================
+    // ENDPOINTS NATIVOS OMSK (AUTH, PROVIDERS & MODELS DB)
+    // ========================================================================
+
+    // 1. Obter modelos reais e status dos provedores autenticados do OMSK
+    if (pathname === "/api/models" && req.method === "GET") {
+      try {
+        const omskDir = path.join(os.homedir(), ".omsk", "agent");
+        const ompDir = path.join(os.homedir(), ".omp", "agent");
+        const targetDir = fs.existsSync(omskDir) ? omskDir : ompDir;
+        const agentDbPath = path.join(targetDir, "agent.db");
+        const modelsDbPath = path.join(targetDir, "models.db");
+
+        let activeCredentials: Array<{ provider: string; credential_type: string; identity_key?: string }> = [];
+        if (fs.existsSync(agentDbPath)) {
+          try {
+            const { Database } = require("bun:sqlite");
+            const db = new Database(agentDbPath, { readonly: true });
+            activeCredentials = db.query("SELECT provider, credential_type, identity_key FROM auth_credentials").all() as any[];
+            db.close();
+          } catch {
+            // Ignore DB lock or read issue
+          }
+        }
+
+        let dynamicModels: any[] = [];
+        if (fs.existsSync(modelsDbPath)) {
+          try {
+            const { Database } = require("bun:sqlite");
+            const db = new Database(modelsDbPath, { readonly: true });
+            const rows = db.query("SELECT models FROM model_cache WHERE length(models) > 2").all() as any[];
+            for (const r of rows) {
+              try {
+                const list = JSON.parse(r.models);
+                if (Array.isArray(list)) dynamicModels.push(...list);
+              } catch {}
+            }
+            db.close();
+          } catch {
+            // Ignore DB lock
+          }
+        }
+
+        const authenticatedProviders = Array.from(new Set(activeCredentials.map(c => c.provider)));
+
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({
+          ok: true,
+          authenticatedProviders,
+          activeCredentials,
+          modelsCount: dynamicModels.length,
+          models: dynamicModels.slice(0, 100).map(m => ({
+            id: m.id,
+            name: m.name || m.id,
+            provider: m.provider,
+            contextWindow: m.contextWindow || 128000,
+            maxTokens: m.maxTokens || 8192,
+            reasoning: Boolean(m.reasoning),
+          })),
+        }));
+      } catch (err: unknown) {
+        res.writeHead(500, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: String(err) }));
+      }
+      return;
+    }
+
+    // 2. Login rápido em provedor (Persiste na auth storage do OMSK)
+    if (pathname === "/api/providers/login" && req.method === "POST") {
+      let body = "";
+      req.on("data", chunk => { body += chunk; });
+      req.on("end", () => {
+        try {
+          const data = JSON.parse(body || "{}");
+          const { provider, apiKey } = data;
+          if (!provider) {
+            res.writeHead(400, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ ok: false, error: "Missing provider id" }));
+            return;
+          }
+
+          const omskDir = path.join(os.homedir(), ".omsk", "agent");
+          if (!fs.existsSync(omskDir)) fs.mkdirSync(omskDir, { recursive: true });
+          const agentDbPath = path.join(omskDir, "agent.db");
+
+          if (apiKey && apiKey.trim()) {
+            try {
+              const { Database } = require("bun:sqlite");
+              const db = new Database(agentDbPath);
+              db.run(
+                "INSERT OR REPLACE INTO auth_credentials (provider, credential_type, data, identity_key, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
+                [provider, "api_key", JSON.stringify({ key: apiKey.trim() }), null, Math.floor(Date.now() / 1000), Math.floor(Date.now() / 1000)]
+              );
+              db.close();
+            } catch (dbErr) {
+              // Ignore SQLite write error
+            }
+          }
+
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: true, provider, message: `Login efetuado com sucesso para ${provider}.` }));
+        } catch (err: unknown) {
+          res.writeHead(500, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: false, error: String(err) }));
+        }
+      });
+      return;
+    }
     if (pathname === "/api/fs/browse") {
       const reqDir = urlObj.searchParams.get("dir") || process.cwd();
       try {

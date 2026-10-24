@@ -21,6 +21,33 @@ import {
 
 const INITIAL_PROVIDERS: readonly AIProvider[] = [
   {
+    id: "google-antigravity",
+    name: "Google Antigravity (Gemini 3 Pro / Mandatory Thinking)",
+    status: "connected",
+    endpoint: "https://daily-cloudcode-pa.googleapis.com",
+    latency: "180ms",
+    activeModelId: "gemini-3-1-pro",
+    models: [AVAILABLE_MODELS[2]!],
+  },
+  {
+    id: "openai-codex",
+    name: "ChatGPT Plus/Pro (Codex Subscription)",
+    status: "connected",
+    endpoint: "https://chatgpt.com/backend-api",
+    latency: "210ms",
+    activeModelId: "gpt-6-luna",
+    models: [AVAILABLE_MODELS[1]!],
+  },
+  {
+    id: "openrouter",
+    name: "OpenRouter Gateway (500+ Modelos)",
+    status: "connected",
+    endpoint: "https://openrouter.ai/api/v1",
+    latency: "240ms",
+    activeModelId: "deepseek-r1",
+    models: [AVAILABLE_MODELS[3]!],
+  },
+  {
     id: "anthropic",
     name: "Anthropic",
     status: "connected",
@@ -71,6 +98,9 @@ export const ProvidersPage: React.FC = () => {
   const { activeModel, setActiveModel, showNotification } = useAppStore();
   const [providers, setProviders] = React.useState<readonly AIProvider[]>(INITIAL_PROVIDERS);
   const [testingId, setTestingId] = React.useState<string | null>(null);
+  const [loginModalOpen, setLoginModalOpen] = React.useState(false);
+  const [selectedProviderToLogin, setSelectedProviderToLogin] = React.useState("google-antigravity");
+  const [apiKeyInput, setApiKeyInput] = React.useState("");
 
   const handleTestConnection = (provId: string) => {
     setTestingId(provId);
@@ -131,6 +161,15 @@ export const ProvidersPage: React.FC = () => {
             </p>
           </div>
         </div>
+
+        <Button
+          variant="primary"
+          size="sm"
+          icon={<SparklesIcon size={14} />}
+          onClick={() => setLoginModalOpen(true)}
+        >
+          + Conectar / Login Provedor
+        </Button>
       </div>
 
       {/* Grid de Provedores Conectados */}
@@ -303,6 +342,113 @@ export const ProvidersPage: React.FC = () => {
           })}
         </div>
       </div>
+      {/* Modal de Conexão e Login OAuth / API Key */}
+      {loginModalOpen && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            backgroundColor: "rgba(2, 10, 22, 0.8)",
+            backdropFilter: "blur(4px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 100,
+            padding: "16px",
+          }}
+        >
+          <Card variant="raised" padding="lg" style={{ width: "100%", maxWidth: "480px", display: "flex", flexDirection: "column", gap: "16px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <ProvidersIcon size={18} />
+                <span style={{ fontSize: "var(--text-md)", fontWeight: 700 }}>Conectar Novo Provedor (OMSK Auth)</span>
+              </div>
+              <button
+                onClick={() => setLoginModalOpen(false)}
+                style={{ background: "none", border: "none", color: "var(--color-text-muted)", cursor: "pointer", fontSize: "16px" }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <p style={{ margin: 0, fontSize: "var(--text-xs)", color: "var(--color-text-muted)" }}>
+              Autentique-se com os mesmos provedores suportados pelo OMSK (/login). Suas credenciais são sincronizadas no armazenamento local seguro (~/.omsk/agent/agent.db).
+            </p>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              <label style={{ fontSize: "11px", fontWeight: 600, color: "var(--color-text-secondary)" }}>Provedor</label>
+              <select
+                value={selectedProviderToLogin}
+                onChange={(e) => setSelectedProviderToLogin(e.target.value)}
+                style={{
+                  padding: "8px 12px",
+                  borderRadius: "var(--radius-sm)",
+                  backgroundColor: "var(--ocean-950)",
+                  border: "1px solid var(--color-border)",
+                  color: "var(--color-text)",
+                  fontSize: "var(--text-xs)",
+                }}
+              >
+                <option value="google-antigravity">Google Antigravity (Gemini 3 Pro / Mandatory Thinking)</option>
+                <option value="openai-codex">ChatGPT Plus/Pro (Codex Subscription)</option>
+                <option value="openrouter">OpenRouter Gateway (500+ Modelos)</option>
+                <option value="anthropic">Anthropic (Claude 3.7 Sonnet / Opus)</option>
+                <option value="deepseek">DeepSeek R1 / V3</option>
+                <option value="groq">Meta Llama 3.3 (Groq Ultra Fast)</option>
+              </select>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              <label style={{ fontSize: "11px", fontWeight: 600, color: "var(--color-text-secondary)" }}>API Key ou Token de Sessão</label>
+              <input
+                type="password"
+                placeholder="Insira a chave de API ou deixe em branco para OAuth nativo..."
+                value={apiKeyInput}
+                onChange={(e) => setApiKeyInput(e.target.value)}
+                style={{
+                  padding: "8px 12px",
+                  borderRadius: "var(--radius-sm)",
+                  backgroundColor: "var(--ocean-950)",
+                  border: "1px solid var(--color-border)",
+                  color: "var(--color-text)",
+                  fontSize: "var(--text-xs)",
+                }}
+              />
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", marginTop: "8px" }}>
+              <Button variant="ghost" size="sm" onClick={() => setLoginModalOpen(false)}>
+                Cancelar
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={async () => {
+                  try {
+                    const res = await fetch("/api/providers/login", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ provider: selectedProviderToLogin, apiKey: apiKeyInput }),
+                    });
+                    if (res.ok) {
+                      showNotification(`Provedor ${selectedProviderToLogin} autenticado no OMSK!`, "success");
+                      setLoginModalOpen(false);
+                      setApiKeyInput("");
+                    } else {
+                      showNotification("Falha ao salvar credencial no OMSK", "error");
+                    }
+                  } catch {
+                    showNotification("Erro de conexão com o runtime OMSK", "error");
+                  }
+                }}
+              >
+                Salvar Credencial & Conectar
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
+
     </div>
   );
 };

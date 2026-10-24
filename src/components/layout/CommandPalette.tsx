@@ -23,7 +23,7 @@ import { useChatStore } from "@/store/useChatStore";
 interface CommandItem {
   id: string;
   title: string;
-  category: "Navegação" | "Ações Rápidas" | "Modelos";
+  category: "Navegação" | "Comandos OMSK" | "Ações Rápidas" | "Modelos";
   icon: React.ReactNode;
   action: () => void;
 }
@@ -77,6 +77,16 @@ export const CommandPalette: React.FC = () => {
     { id: "nav-specs", title: "Ir para Especificações de Arquitetura", category: "Navegação", icon: <SpecificationsIcon size={16} />, action: () => navigate("/specifications") },
     { id: "nav-agents", title: "Ir para Hub de Especialistas", category: "Navegação", icon: <AgentsIcon size={16} />, action: () => navigate("/agents") },
     { id: "nav-analytics", title: "Ir para Dashboard Analítico", category: "Navegação", icon: <AnalyticsIcon size={16} />, action: () => navigate("/analytics") },
+
+    // Comandos OMSK (Paridade Estrita com TUI)
+    { id: "cmd-doomania", title: "/doomania — Painel de deliberação dos 3 agentes críticos", category: "Comandos OMSK", icon: <CheckIcon size={16} />, action: () => { useChatStore.getState().sendMessage("/doomania"); navigate("/"); } },
+    { id: "cmd-model", title: "/model — Selecionar e inspecionar modelos do catálogo", category: "Comandos OMSK", icon: <ProvidersIcon size={16} />, action: () => navigate("/providers") },
+    { id: "cmd-login", title: "/login — Conectar com provedores OAuth e APIs", category: "Comandos OMSK", icon: <ProvidersIcon size={16} />, action: () => navigate("/providers") },
+    { id: "cmd-skills", title: "/skills — Gerenciar habilidades e memória persistente", category: "Comandos OMSK", icon: <ToolsIcon size={16} />, action: () => navigate("/tools") },
+    { id: "cmd-tasks", title: "/tasks — Plano de execução e grafo topológico DAG", category: "Comandos OMSK", icon: <TasksIcon size={16} />, action: () => navigate("/tasks") },
+    { id: "cmd-settings", title: "/settings — Preferências e permissões de ferramentas", category: "Comandos OMSK", icon: <SettingsIcon size={16} />, action: () => navigate("/settings") },
+    { id: "cmd-context", title: "/context — Inspecionar arquivos e árvore de contexto", category: "Comandos OMSK", icon: <ContextIcon size={16} />, action: () => navigate("/context") },
+    { id: "cmd-agents", title: "/agents — Painel da equipe de especialistas do ecossistema", category: "Comandos OMSK", icon: <AgentsIcon size={16} />, action: () => navigate("/agents") },
 
     // Ações Rápidas
     { id: "act-toggle-sidebar", title: "Alternar Barra Lateral", category: "Ações Rápidas", icon: <SearchIcon size={16} />, action: () => toggleSidebar() },

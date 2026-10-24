@@ -69,6 +69,8 @@ export interface AppNotification {
 
 interface AppState {
   currentRoute: NavigationId;
+  availableModels: readonly AIModel[];
+  authenticatedProviders: readonly string[];
   sidebarCollapsed: boolean;
   inspectorOpen: boolean;
   activeInspectorTab: InspectorTab;
@@ -103,6 +105,8 @@ export const useAppStore = create<AppState>((set) => ({
   sidebarCollapsed: false,
   inspectorOpen: true,
   activeInspectorTab: "agent",
+  availableModels: AVAILABLE_MODELS,
+  authenticatedProviders: ["google-antigravity", "openai-codex", "openrouter"],
   activeModel: AVAILABLE_MODELS[0]!,
   activeScope: "~/projects/oh-my-shark",
   gitBranch: "main",
@@ -137,21 +141,28 @@ export const useAppStore = create<AppState>((set) => ({
       const res = await fetch("/api/models");
       if (!res.ok) return;
       const data = await res.json();
-      if (data && data.ok && Array.isArray(data.models) && data.models.length > 0) {
-        const mappedModels: AIModel[] = data.models.map((m: any, idx: number) => ({
-          id: m.id || m.selector,
-          name: m.name || m.id,
-          provider: m.provider || "OMSK",
-          contextWindow: m.contextWindow ? `${Math.round(m.contextWindow / 1000)}k` : "128k",
-          maxOutput: m.maxTokens ? `${Math.round(m.maxTokens / 1000)}k` : "8k",
-          pricing: { input: "Grátis / Local", output: "Grátis / Local" },
-          latencyMs: 120,
-          isDefault: idx === 0,
-          tags: [m.provider, m.reasoning ? "Raciocínio" : "Execução"],
-        }));
-        set({
-          activeModel: mappedModels[0]!,
-        });
+      if (data && data.ok) {
+        const authed = Array.isArray(data.authenticatedProviders) ? data.authenticatedProviders : [];
+        if (Array.isArray(data.models) && data.models.length > 0) {
+          const mappedModels: AIModel[] = data.models.map((m: any, idx: number) => ({
+            id: m.id || m.selector,
+            name: m.name || m.id,
+            provider: m.provider || "OMSK",
+            contextWindow: m.contextWindow ? `${Math.round(m.contextWindow / 1000)}k` : "128k",
+            maxOutput: m.maxTokens ? `${Math.round(m.maxTokens / 1000)}k` : "8k",
+            pricing: { input: "Conectado / Local", output: "Conectado / Local" },
+            latencyMs: 120,
+            isDefault: idx === 0,
+            tags: [m.provider, m.reasoning ? "Raciocínio" : "Execução"],
+          }));
+          set({
+            availableModels: [...mappedModels, ...AVAILABLE_MODELS],
+            authenticatedProviders: authed,
+            activeModel: mappedModels[0]!,
+          });
+        } else if (authed.length > 0) {
+          set({ authenticatedProviders: authed });
+        }
       }
     } catch {
       // Backend local em modo standalone; mantém modelos padrão

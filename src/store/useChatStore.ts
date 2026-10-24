@@ -346,8 +346,35 @@ async function generateSimulatedReply(
     // Teia vazia ou não disponível
   }
 
-  // Caso: Usuário dá uma ordem de memorização ou preferência explícita
   const lower = input.toLowerCase();
+
+  // Suporte a Comandos Nativos OMSK: /doomania
+  if (lower.includes("doomania")) {
+    return {
+      content: `🏛️ **Comitê Deliberativo Doomania (OMSK Panel)**\n\n` +
+        `🟢 **doomania-critico (Segurança & Rigor):**\n` +
+        `> Avaliou os riscos estruturais. Recomenda validação rigorosa de esquemas e zero tolerancia a regressões.\n\n` +
+        `🟢 **doomania-permissivo (Velocidade & Desbloqueio):**\n` +
+        `> Aprova a rota de menor atrito para destravar a produtividade e execução imediata.\n\n` +
+        `🟢 **doomania-criativo (Inovação & Arquitetura):**\n` +
+        `> Sugere integração com a Mente em Teia e otimização DeepSeaNeuron de tokens.\n\n` +
+        `✨ *Consenso unânime alcançado: arquitetura validada e pronta para execução.*\n`,
+      thinking: {
+        status: "done",
+        text: "Deliberação tripartite concluída: doomania-critico, doomania-permissivo e doomania-criativo sintetizaram a recomendação final.",
+        duration: "0.8s",
+      },
+      plan: {
+        steps: [
+          { id: 1, text: "Auditar superfícies de ataque e tipos TypeScript", completed: true },
+          { id: 2, text: "Permitir execução ágil sem fricção", completed: true },
+          { id: 3, text: "Consolidar memória semântica na Mente em Teia", completed: true },
+        ],
+      },
+    };
+  }
+
+  // Caso: Usuário dá uma ordem de memorização ou preferência explícita
   if (lower.startsWith("lembre-se") || lower.includes("minha preferência") || lower.includes("salve na teia") || lower.includes("guarde isso")) {
     const memoryTitle = `Pref ${input.slice(0, 24).replace(/[^a-zA-Z0-9\s]/g, "")}`;
     try {
