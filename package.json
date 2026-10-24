@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "test": "bun test",
     "lint": "oxlint src",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "open": "vite --open"
   },
   "dependencies": {
     "framer-motion": "^14.3.0",
