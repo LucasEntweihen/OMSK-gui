@@ -38,10 +38,10 @@
     "vite": "^8.3.4"
   },
   "description": "Official Deep Ocean Graphical Interface for Oh My Shark (OMSK)",
-  "main": "electron/dist/main.js",
+  "main": "electron/dist/main.cjs",
   "build": {
     "appId": "com.lucasentweihen.omskgui",
-    "productName": "OMSK Codex",
+    "productName": "OMSK GUI",
     "directories": {
       "output": "release-app"
     },
@@ -58,6 +58,8 @@
           ]
         }
       ]
-    }
-  }
+    },
+    "artifactName": "${productName}.${ext}"
+  },
+  "productName": "OMSK GUI"
 }
