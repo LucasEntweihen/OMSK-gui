@@ -600,6 +600,7 @@ export const TeiaCanvas: React.FC<TeiaCanvasProps> = ({
 
       {/* Floating Toolbar da Teia (Legenda Retrátil + HUD de Câmera) */}
       <div
+        className="teia-canvas-toolbar"
         style={{
           position: "absolute",
           bottom: "14px",

@@ -109,3 +109,153 @@ code, pre, kbd {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+ 
+/* Responsive layout */
+html, #root {
+  min-height: 100%;
+}
+
+body {
+  min-width: 320px;
+  overflow: hidden;
+}
+
+@media (max-width: 1100px) {
+  :root {
+    --sidebar-width: 220px;
+    --inspector-width: 260px;
+  }
+
+  .oms-inspector {
+    display: none !important;
+  }
+}
+
+@media (max-width: 760px) {
+  :root {
+    --topbar-height: 48px;
+    --statusbar-height: 34px;
+  }
+
+  .oms-sidebar {
+    display: none !important;
+  }
+
+  .oms-topbar {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+
+  .oms-topbar > div {
+    min-width: 0;
+  }
+
+  .oms-topbar button {
+    min-width: 36px;
+    min-height: 36px;
+  }
+
+  .oms-topbar span {
+    max-width: 38vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .oms-statusbar {
+    padding: 0 10px !important;
+    font-size: 10px !important;
+  }
+
+  .oms-statusbar > div {
+    min-width: 0;
+    gap: 8px !important;
+  }
+
+  .oms-statusbar > div:first-child > div:first-child {
+    max-width: 58vw;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .oms-main-workspace {
+    min-width: 0;
+  }
+
+  .oms-teia-page {
+    min-height: 0;
+  }
+
+  .teia-explorer,
+  .teia-inspector {
+    display: none !important;
+  }
+
+  .teia-workspace-header {
+    height: auto !important;
+    min-height: 48px !important;
+    padding: 6px 10px !important;
+    flex-wrap: wrap;
+    gap: 6px !important;
+  }
+
+  .teia-workspace-header > * {
+    max-width: 100%;
+  }
+
+  .teia-workspace-header button {
+    min-height: 34px;
+  }
+
+  .teia-canvas-toolbar {
+    left: 8px !important;
+    right: 8px !important;
+    bottom: 8px !important;
+  }
+
+  .teia-hover-card {
+    max-width: calc(100vw - 24px) !important;
+  }
+
+  .oms-teia-page textarea {
+    font-size: 12px !important;
+    padding: 12px !important;
+  }
+
+  .oms-teia-page [style*="display: flex"][style*="width: 100%"] {
+    min-width: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .oms-topbar {
+    gap: 4px !important;
+  }
+
+  .oms-topbar span {
+    max-width: 30vw;
+  }
+
+  .teia-workspace-header {
+    overflow-x: auto;
+    flex-wrap: nowrap !important;
+    scrollbar-width: none;
+  }
+
+  .teia-workspace-header::-webkit-scrollbar {
+    display: none;
+  }
+
+  .oms-statusbar > div:nth-child(2) {
+    display: none !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
