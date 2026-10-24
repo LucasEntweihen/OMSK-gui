@@ -217,7 +217,7 @@ async function createWindow(): Promise<void> {
     height: 900,
     minWidth: 1024,
     minHeight: 720,
-    title: "OMSK — Deep Ocean Codex",
+    title: "OMSK GUI",
     backgroundColor: "#020A16",
     autoHideMenuBar: true,
     show: false,
