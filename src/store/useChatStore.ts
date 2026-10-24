@@ -147,27 +147,147 @@ export const useChatStore = create<ChatState>((set, get) => ({
       isGenerating: true,
     }));
 
-    // Simulação inteligente consultando a Mente em Teia no Desktop
-    try {
-      const responseTemplate = await generateSimulatedReply(content, attachments);
-      const assistantMsg: ChatMessage = {
-        id: `msg-${Date.now() + 1}`,
-        role: "assistant",
-        senderName: "Oh My Shark",
-        timestamp: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
-        content: responseTemplate.content,
-        thinking: responseTemplate.thinking,
-        plan: responseTemplate.plan,
-        toolExecutions: responseTemplate.toolExecutions,
-        identifiedFiles: responseTemplate.identifiedFiles,
-      };
+    // 1. Tenta streaming em tempo real via backend local do OMSK/CosmoSky (/api/chat/stream)
+    let streamSuccess = false;
+    const assistantId = `msg-${Date.now() + 1}`;
+    const initialAssistantMsg: ChatMessage = {
+      id: assistantId,
+      role: "assistant",
+      senderName: "Oh My Shark",
+      timestamp: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
+      content: "",
+      thinking: { status: "thinking", text: "", duration: "calculando..." },
+    };
 
-      set((state) => ({
-        messages: [...state.messages, assistantMsg],
-        isGenerating: false,
-      }));
+    try {
+      const startTime = Date.now();
+      const res = await fetch("/api/chat/stream", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text: content,
+          history: get().messages.slice(-6).map((m) => ({
+            sender: m.role,
+            content: m.content,
+          })),
+        }),
+      });
+
+      if (res.ok && res.body) {
+        streamSuccess = true;
+        set((state) => ({
+          messages: [...state.messages, initialAssistantMsg],
+        }));
+
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+        let accumulatedText = "";
+        let accumulatedThinking = "";
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+
+          const lines = buffer.split("\n");
+          buffer = lines.pop() || "";
+
+          let currentEvent = "";
+          for (const line of lines) {
+            if (line.startsWith("event: ")) {
+              currentEvent = line.slice(7).trim();
+            } else if (line.startsWith("data: ")) {
+              try {
+                const data = JSON.parse(line.slice(6));
+                if (currentEvent === "thinking_delta" && data.delta) {
+                  accumulatedThinking += data.delta;
+                  set((state) => ({
+                    messages: state.messages.map((m) =>
+                      m.id === assistantId
+                        ? {
+                            ...m,
+                            thinking: {
+                              status: "thinking",
+                              text: accumulatedThinking,
+                              duration: `${((Date.now() - startTime) / 1000).toFixed(1)}s`,
+                            },
+                          }
+                        : m
+                    ),
+                  }));
+                } else if (currentEvent === "text_delta" && data.delta) {
+                  accumulatedText += data.delta;
+                  set((state) => ({
+                    messages: state.messages.map((m) =>
+                      m.id === assistantId
+                        ? {
+                            ...m,
+                            content: accumulatedText,
+                            thinking: accumulatedThinking
+                              ? {
+                                  status: "done",
+                                  text: accumulatedThinking,
+                                  duration: `${((Date.now() - startTime) / 1000).toFixed(1)}s`,
+                                }
+                              : undefined,
+                          }
+                        : m
+                    ),
+                  }));
+                }
+              } catch {
+                // Linha de dados parciais ou não JSON
+              }
+            }
+          }
+        }
+
+        set((state) => ({
+          messages: state.messages.map((m) =>
+            m.id === assistantId
+              ? {
+                  ...m,
+                  thinking: accumulatedThinking
+                    ? {
+                        status: "done",
+                        text: accumulatedThinking,
+                        duration: `${((Date.now() - startTime) / 1000).toFixed(1)}s`,
+                      }
+                    : undefined,
+                }
+              : m
+          ),
+          isGenerating: false,
+        }));
+      }
     } catch {
-      set({ isGenerating: false });
+      streamSuccess = false;
+    }
+
+    // 2. Se backend de streaming não estiver ativo, realiza simulação neural com Mente em Teia
+    if (!streamSuccess) {
+      try {
+        const responseTemplate = await generateSimulatedReply(content, attachments);
+        const assistantMsg: ChatMessage = {
+          id: assistantId,
+          role: "assistant",
+          senderName: "Oh My Shark",
+          timestamp: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
+          content: responseTemplate.content,
+          thinking: responseTemplate.thinking,
+          plan: responseTemplate.plan,
+          toolExecutions: responseTemplate.toolExecutions,
+          identifiedFiles: responseTemplate.identifiedFiles,
+        };
+
+        set((state) => ({
+          messages: [...state.messages.filter((m) => m.id !== assistantId), assistantMsg],
+          isGenerating: false,
+        }));
+      } catch {
+        set({ isGenerating: false });
+      }
     }
   },
 

@@ -151,6 +151,7 @@ export function renderTeiaMarkdown(raw: string, existsCheck: (ref: string) => bo
     t = t.replace(/✦/g, '<span class="teia-ai-glyph" title="Gerado ou inferido por IA">✦</span>');
 
     // Restaura inline code
+    /* oxlint-disable-next-line no-control-regex */
     return t.replace(/\u0000(\d+)\u0000/g, (_, i) => `<code>${codes[Number(i)]}</code>`);
   };
 
@@ -182,7 +183,7 @@ export function renderTeiaMarkdown(raw: string, existsCheck: (ref: string) => bo
 
   for (const line of body.split("\n")) {
     if (codeLines !== null) {
-      if (/^```/.test(line)) {
+      if (line.startsWith("```")) {
         out.push(`<pre><code>${escHtml(codeLines.join("\n"))}</code></pre>`);
         codeLines = null;
       } else {
@@ -191,7 +192,7 @@ export function renderTeiaMarkdown(raw: string, existsCheck: (ref: string) => bo
       continue;
     }
 
-    if (/^```/.test(line)) {
+    if (line.startsWith("```")) {
       flush();
       closeList();
       codeLines = [];

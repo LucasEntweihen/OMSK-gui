@@ -4,7 +4,7 @@
  * Pipeline de 7 fases: detect -> extract -> build -> cluster -> analyze -> report -> export
  */
 
-import type { TeiaNode, TeiaEdge, TeiaNodeType, TeiaTrust } from "../teiaEngine";
+import type { TeiaNode, TeiaEdge, TeiaNodeType } from "../teiaEngine";
 
 export type GraphifyConfidence = "EXTRACTED" | "INFERRED" | "AMBIGUOUS";
 

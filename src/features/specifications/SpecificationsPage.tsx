@@ -1,7 +1,6 @@
 import React from "react";
-import { SpecificationsIcon, CodeIcon, CopyIcon, CheckIcon } from "@/components/icons";
+import { SpecificationsIcon, CopyIcon, CheckIcon } from "@/components/icons";
 import { Card } from "@/components/ui/Card";
-import { Badge } from "@/components/ui/Badge";
 
 export const SpecificationsPage: React.FC = () => {
   const [activeTab, setActiveTab] = React.useState<"arch" | "tokens" | "contracts">("arch");

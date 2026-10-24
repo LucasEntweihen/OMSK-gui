@@ -161,10 +161,10 @@ export interface AIProvider {
 }
 
 export interface AgentSpecialist {
-  readonly id: "shark-lead" | "code-architect" | "deep-sea-sage" | "security-sentinel" | "theological-scholar";
+  readonly id: string;
   readonly name: string;
   readonly title: string;
-  readonly category: "orchestrator" | "specialist" | "scholar" | "critic";
+  readonly category: "orchestrator" | "specialist" | "scholar" | "critic" | "executor";
   readonly color: string;
   readonly systemPrompt: string;
   readonly functions: readonly string[];

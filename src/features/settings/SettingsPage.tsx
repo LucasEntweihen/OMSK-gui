@@ -1,9 +1,6 @@
 import React from "react";
 import {
   SettingsIcon,
-  CheckCircleIcon,
-  AlertCircleIcon,
-  RefreshIcon,
   TrashIcon,
 } from "@/components/icons";
 import { useSettingsStore } from "@/store/useSettingsStore";
@@ -15,7 +12,7 @@ import { Toggle } from "@/components/ui/Toggle";
 import type { ToolPermission } from "@/types";
 
 export const SettingsPage: React.FC = () => {
-  const { settings, updateSetting, saveSettings, resetDefaults, isSaved, hasUnsavedChanges } = useSettingsStore();
+  const { settings, updateSetting, saveSettings, resetDefaults, hasUnsavedChanges } = useSettingsStore();
   const { showNotification } = useAppStore();
 
   const handleSave = () => {

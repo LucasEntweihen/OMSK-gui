@@ -3,46 +3,46 @@ import type { AIModel, NavigationId } from "@/types";
 
 export const AVAILABLE_MODELS: readonly AIModel[] = [
   {
-    id: "claude-3-5-sonnet",
-    name: "Claude 3.5 Sonnet",
+    id: "claude-3-7-sonnet",
+    name: "Claude 3.7 Sonnet (Thinking)",
     provider: "Anthropic",
     contextWindow: "200k",
-    maxOutput: "8k",
+    maxOutput: "64k",
     pricing: { input: "$3.00 / 1M", output: "$15.00 / 1M" },
-    latencyMs: 380,
+    latencyMs: 280,
     isDefault: true,
-    tags: ["Raciocínio Rápido", "Visão", "Código"],
+    tags: ["Raciocínio Híbrido", "Visão", "Engenharia de Código"],
   },
   {
-    id: "gpt-4o",
-    name: "GPT-4o",
-    provider: "OpenAI",
-    contextWindow: "128k",
-    maxOutput: "4k",
-    pricing: { input: "$2.50 / 1M", output: "$10.00 / 1M" },
-    latencyMs: 420,
+    id: "gpt-6-luna",
+    name: "GPT-6 Luna (Codex)",
+    provider: "OpenAI Codex",
+    contextWindow: "256k",
+    maxOutput: "32k",
+    pricing: { input: "$2.00 / 1M", output: "$8.00 / 1M" },
+    latencyMs: 310,
     isDefault: false,
-    tags: ["Multimodal", "Velocidade"],
+    tags: ["Astral Codex", "Raciocínio Neural"],
   },
   {
-    id: "gemini-1-5-pro",
-    name: "Gemini 1.5 Pro",
-    provider: "Google",
+    id: "gemini-3-1-pro",
+    name: "Gemini 3.1 Pro (Mandatory Thinking)",
+    provider: "Google Antigravity",
     contextWindow: "2M",
-    maxOutput: "8k",
+    maxOutput: "64k",
     pricing: { input: "$1.25 / 1M", output: "$5.00 / 1M" },
-    latencyMs: 490,
+    latencyMs: 390,
     isDefault: false,
-    tags: ["Contexto Extremo", "Multimodal"],
+    tags: ["Contexto 2M", "Antigravity Cloud"],
   },
   {
     id: "deepseek-r1",
     name: "DeepSeek R1",
     provider: "DeepSeek",
-    contextWindow: "64k",
-    maxOutput: "8k",
+    contextWindow: "128k",
+    maxOutput: "16k",
     pricing: { input: "$0.55 / 1M", output: "$2.19 / 1M" },
-    latencyMs: 650,
+    latencyMs: 450,
     isDefault: false,
     tags: ["Raciocínio Puro", "Econômico"],
   },
@@ -95,6 +95,7 @@ interface AppState {
   setActiveAgentMode: (mode: "Autônomo" | "Supervisionado" | "Plano") => void;
   showNotification: (message: string, type?: AppNotification["type"]) => void;
   dismissNotification: () => void;
+  syncBackendModels: () => Promise<void>;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -131,4 +132,29 @@ export const useAppStore = create<AppState>((set) => ({
     }, 4000);
   },
   dismissNotification: () => set({ notification: null }),
+  syncBackendModels: async () => {
+    try {
+      const res = await fetch("/api/models");
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data && data.ok && Array.isArray(data.models) && data.models.length > 0) {
+        const mappedModels: AIModel[] = data.models.map((m: any, idx: number) => ({
+          id: m.id || m.selector,
+          name: m.name || m.id,
+          provider: m.provider || "OMSK",
+          contextWindow: m.contextWindow ? `${Math.round(m.contextWindow / 1000)}k` : "128k",
+          maxOutput: m.maxTokens ? `${Math.round(m.maxTokens / 1000)}k` : "8k",
+          pricing: { input: "Grátis / Local", output: "Grátis / Local" },
+          latencyMs: 120,
+          isDefault: idx === 0,
+          tags: [m.provider, m.reasoning ? "Raciocínio" : "Execução"],
+        }));
+        set({
+          activeModel: mappedModels[0]!,
+        });
+      }
+    } catch {
+      // Backend local em modo standalone; mantém modelos padrão
+    }
+  },
 }));

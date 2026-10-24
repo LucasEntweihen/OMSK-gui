@@ -1,7 +1,6 @@
 import React from "react";
 import {
   AgentsIcon,
-  CheckCircleIcon,
   SparklesIcon,
 } from "@/components/icons";
 import { useAgentStore } from "@/store/useAgentStore";

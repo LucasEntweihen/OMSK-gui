@@ -1,8 +1,6 @@
 import React from "react";
 import {
   SystemPromptIcon,
-  CheckCircleIcon,
-  AlertCircleIcon,
   CopyIcon,
   CheckIcon,
 } from "@/components/icons";
@@ -36,7 +34,8 @@ export const SystemPromptPage: React.FC = () => {
   const [promptContent, setPromptContent] = React.useState(DEFAULT_SYSTEM_PROMPT);
   const [savedPrompt, setSavedPrompt] = React.useState(DEFAULT_SYSTEM_PROMPT);
   const [activeScope, setActiveScope] = React.useState<"global" | "project" | "agent">("project");
-  const [viewMode, setViewMode] = React.useState<"editor" | "diff">("editor");
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [_viewMode, _setViewMode] = React.useState<"editor" | "diff">("editor");
   const [copied, setCopied] = React.useState(false);
 
   const isDirty = promptContent !== savedPrompt;

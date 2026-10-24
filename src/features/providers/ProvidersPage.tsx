@@ -1,7 +1,6 @@
 import React from "react";
 import {
   ProvidersIcon,
-  CheckCircleIcon,
   RefreshIcon,
   SparklesIcon,
 } from "@/components/icons";
@@ -9,7 +8,7 @@ import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { useAppStore, AVAILABLE_MODELS } from "@/store/useAppStore";
-import type { AIProvider, AIModel } from "@/types";
+import type { AIProvider } from "@/types";
 import {
   BarChart,
   Bar,
