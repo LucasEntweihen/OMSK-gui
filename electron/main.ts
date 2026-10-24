@@ -202,7 +202,7 @@ function startEmbeddedServer(distDir: string): Promise<number> {
 
 async function createWindow(): Promise<void> {
   const isDev = process.env.NODE_ENV === "development";
-  const distDir = path.join(__dirname, "..", "dist");
+  const distDir = path.join(__dirname, "..", "..", "dist");
 
   let appUrl = "";
   if (isDev) {
@@ -224,7 +224,7 @@ async function createWindow(): Promise<void> {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
-      preload: path.join(__dirname, "preload.cjs"),
+      preload: path.join(__dirname, "preload.js"),
     },
   });
 
