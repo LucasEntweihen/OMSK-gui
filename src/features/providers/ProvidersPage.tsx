@@ -122,6 +122,8 @@ export const ProvidersPage: React.FC = () => {
   const [providerSearch, setProviderSearch] = React.useState("");
   const [filterMode, setFilterMode] = React.useState<"all" | "connected" | "oauth" | "apikey">("all");
   const [loggingInWeb, setLoggingInWeb] = React.useState(false);
+  const [currentPage, setCurrentPage] = React.useState(1);
+  const pageSize = 12;
 
   React.useEffect(() => {
     syncBackendModels();
@@ -201,6 +203,9 @@ export const ProvidersPage: React.FC = () => {
       setLoggingOutId(null);
     }
   };
+
+  const totalPages = Math.ceil(displayProviders.length / pageSize) || 1;
+  const paginatedProviders = displayProviders.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const chartData = availableModels.slice(0, 8).map((m) => ({
     name: m.name.split(" ")[0],
@@ -300,9 +305,12 @@ export const ProvidersPage: React.FC = () => {
         </div>
       </div>
 
+      
+  
+
       {/* Grid de Provedores com Status Real */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "16px" }}>
-        {displayProviders.map((prov) => {
+        {paginatedProviders.map((prov) => {
           const isTesting = testingId === prov.id;
           const isLoggingOut = loggingOutId === prov.id;
           const isConnected = prov.status === "connected";
@@ -370,6 +378,40 @@ export const ProvidersPage: React.FC = () => {
           );
         })}
       </div>
+
+      
+      {/* Controles de Navegação pelos Provedores */}
+      {totalPages > 1 && (
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", backgroundColor: "var(--ocean-900)", borderRadius: "var(--radius-md)", border: "1px solid var(--color-border)" }}>
+          <span style={{ fontSize: "var(--text-xs)", color: "var(--color-text-muted)" }}>
+            Mostrando {((currentPage - 1) * pageSize) + 1} a {Math.min(currentPage * pageSize, displayProviders.length)} de {displayProviders.length} provedores
+          </span>
+
+          <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+            >
+              Anterior
+            </Button>
+            
+            <span style={{ fontSize: "var(--text-xs)", color: "var(--color-text)", fontWeight: 700, padding: "0 8px" }}>
+              Página {currentPage} de {totalPages}
+            </span>
+
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+            >
+              Próxima
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Benchmark de Latência (Recharts) */}
       <Card variant="raised" padding="md">

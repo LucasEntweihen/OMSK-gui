@@ -20,6 +20,10 @@ export const TopBar: React.FC = () => {
 
   const {
     activeScope,
+    activeModel,
+    setActiveModel,
+    availableModels,
+    showNotification,
     inspectorOpen,
     toggleInspector,
     sidebarCollapsed,
@@ -204,6 +208,47 @@ export const TopBar: React.FC = () => {
 
         {/* Direita: Busca, Indicadores e Controles */}
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          
+          {/* Seletor Rápido e Simples de Modelo no TopBar */}
+          <div style={{ display: "flex", alignItems: "center", position: "relative" }}>
+            <select
+              value={activeModel.id}
+              onChange={(e) => {
+                const chosen = availableModels.find((m) => m.id === e.target.value);
+                if (chosen) {
+                  setActiveModel(chosen);
+                  try {
+                    fetch("/api/models/select", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ provider: chosen.provider, id: chosen.id }),
+                    });
+                  } catch {}
+                  showNotification("Modelo ativo: " + chosen.name, "success");
+                }
+              }}
+              title="Trocar modelo ativo rapidamente"
+              style={{
+                padding: "4px 10px",
+                borderRadius: "var(--radius-sm)",
+                backgroundColor: isTeia ? "var(--teia-p1)" : "var(--ocean-900)",
+                border: "1px solid " + (isTeia ? "var(--teia-line)" : "var(--color-border)"),
+                fontSize: "var(--text-xs)",
+                fontWeight: 600,
+                color: isTeia ? "var(--teia-text-bright)" : "var(--color-text)",
+                cursor: "pointer",
+                maxWidth: "220px",
+                outline: "none",
+              }}
+            >
+              {availableModels.map((m) => (
+                <option key={m.id} value={m.id} style={{ backgroundColor: "#061326", color: "#E8F1FF" }}>
+                  {m.name} ({m.provider})
+                </option>
+              ))}
+            </select>
+          </div>
+
           {/* Botão de Busca limpo sem badge ⌘K */}
           <button
             onClick={() => setCommandPaletteOpen(true)}

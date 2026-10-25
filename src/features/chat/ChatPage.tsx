@@ -211,6 +211,8 @@ export const ChatPage: React.FC = () => {
                       lineHeight: 1.6,
                       color: "var(--color-text)",
                       whiteSpace: "pre-line",
+                      userSelect: "text",
+                      WebkitUserSelect: "text",
                     }}
                   >
                     {msg.content}

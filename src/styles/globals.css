@@ -14,8 +14,8 @@ body {
   font-family: var(--font-ui);
   font-size: var(--text-md);
   line-height: 1.5;
-  user-select: none;
-  -webkit-user-select: none;
+  user-select: auto;
+  -webkit-user-select: auto;
 }
 
 /* Custom Scrollbars */
@@ -258,4 +258,27 @@ body {
     transition-duration: 0.01ms !important;
     animation-duration: 0.01ms !important;
   }
+}
+
+
+/* Habilita explicitamente seleção, cópia e destaque em mensagens e blocos de código */
+.oms-main-workspace,
+.oms-chat-container,
+.oms-chat-message,
+pre,
+code,
+p,
+span,
+div {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+/* Mantém botões, abas e navegação sem seleção indesejada */
+button,
+.oms-sidebar,
+.oms-topbar,
+.oms-statusbar {
+  user-select: none;
+  -webkit-user-select: none;
 }
