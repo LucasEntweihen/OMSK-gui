@@ -21,6 +21,7 @@ export const MessageComposer: React.FC = () => {
     activeInput,
     setActiveInput,
     sendMessage,
+    abortGeneration,
     isGenerating,
     pendingAttachments,
     addFileAttachment,
@@ -365,41 +366,64 @@ export const MessageComposer: React.FC = () => {
               <CameraIcon size={16} />
             </button>
 
-            {/* Botão Enviar Limpo */}
-            <button
-              onClick={handleSend}
-              disabled={(!activeInput.trim() && pendingAttachments.length === 0) || isGenerating}
-              title="Enviar mensagem"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "6px",
-                padding: "6px 14px",
-                borderRadius: "var(--radius-md)",
-                backgroundColor:
-                  (activeInput.trim() || pendingAttachments.length > 0) && !isGenerating
-                    ? "var(--blue-500)"
-                    : "var(--ocean-800)",
-                color:
-                  (activeInput.trim() || pendingAttachments.length > 0) && !isGenerating
-                    ? "#FFFFFF"
-                    : "var(--color-text-muted)",
-                border: "1px solid rgba(38, 120, 255, 0.3)",
-                fontSize: "var(--text-xs)",
-                fontWeight: 600,
-                cursor:
-                  (activeInput.trim() || pendingAttachments.length > 0) && !isGenerating
-                    ? "pointer"
-                    : "not-allowed",
-                transition: "all var(--duration-fast)",
-              }}
-            >
-              <span>Enviar</span>
-              <ArrowUpIcon size={13} />
-            </button>
+            {/* Botão Enviar ou Interromper */}
+            {isGenerating ? (
+              <button
+                onClick={abortGeneration}
+                title="Interromper geração (Abort)"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  padding: "6px 14px",
+                  borderRadius: "var(--radius-md)",
+                  backgroundColor: "var(--state-error)",
+                  color: "#FFFFFF",
+                  border: "1px solid rgba(239, 68, 68, 0.4)",
+                  fontSize: "var(--text-xs)",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  transition: "all var(--duration-fast)",
+                }}
+              >
+                <span>Parar</span>
+                <span style={{ fontSize: "10px" }}>■</span>
+              </button>
+            ) : (
+              <button
+                onClick={handleSend}
+                disabled={(!activeInput.trim() && pendingAttachments.length === 0)}
+                title="Enviar mensagem"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  padding: "6px 14px",
+                  borderRadius: "var(--radius-md)",
+                  backgroundColor:
+                    activeInput.trim() || pendingAttachments.length > 0
+                      ? "var(--blue-500)"
+                      : "var(--ocean-800)",
+                  color:
+                    activeInput.trim() || pendingAttachments.length > 0
+                      ? "#FFFFFF"
+                      : "var(--color-text-muted)",
+                  border: "1px solid rgba(38, 120, 255, 0.3)",
+                  fontSize: "var(--text-xs)",
+                  fontWeight: 600,
+                  cursor:
+                    activeInput.trim() || pendingAttachments.length > 0
+                      ? "pointer"
+                      : "not-allowed",
+                  transition: "all var(--duration-fast)",
+                }}
+              >
+                <span>Enviar</span>
+                <ArrowUpIcon size={13} />
+              </button>
+            )}
           </div>
         </div>
-
         {/* Barra de Acessórios Limpa com Ícones Vetoriais sem emojis */}
         <div
           style={{

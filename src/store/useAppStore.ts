@@ -1,5 +1,8 @@
 import { create } from "zustand";
-import type { AIModel, NavigationId } from "@/types";
+import type { AIModel, AIProvider } from "@/types";
+import type { AppNotification, AppState, InspectorTab } from "./appStoreTypes";
+
+export type { InspectorTab, AppNotification };
 
 export const AVAILABLE_MODELS: readonly AIModel[] = [
   {
@@ -59,61 +62,21 @@ export const AVAILABLE_MODELS: readonly AIModel[] = [
   },
 ];
 
-export type InspectorTab = "agent" | "tasks" | "tools" | "context" | "providers";
-
-export interface AppNotification {
-  id: string;
-  message: string;
-  type: "info" | "success" | "warning" | "error";
-}
-
-interface AppState {
-  currentRoute: NavigationId;
-  availableModels: readonly AIModel[];
-  authenticatedProviders: readonly string[];
-  sidebarCollapsed: boolean;
-  inspectorOpen: boolean;
-  activeInspectorTab: InspectorTab;
-  activeModel: AIModel;
-  activeScope: string;
-  gitBranch: string;
-  tokenUsage: {
-    used: number; // in tokens, e.g. 1800000
-    total: number; // e.g. 4200000
-    percent: number; // 42%
-  };
-  commandPaletteOpen: boolean;
-  activeAgentMode: "Autônomo" | "Supervisionado" | "Plano";
-  notification: AppNotification | null;
-
-  setCurrentRoute: (route: NavigationId) => void;
-  toggleSidebar: () => void;
-  setSidebarCollapsed: (collapsed: boolean) => void;
-  toggleInspector: () => void;
-  setInspectorOpen: (open: boolean) => void;
-  setActiveInspectorTab: (tab: InspectorTab) => void;
-  setActiveModel: (model: AIModel) => void;
-  setCommandPaletteOpen: (open: boolean) => void;
-  setActiveAgentMode: (mode: "Autônomo" | "Supervisionado" | "Plano") => void;
-  showNotification: (message: string, type?: AppNotification["type"]) => void;
-  dismissNotification: () => void;
-  syncBackendModels: () => Promise<void>;
-}
-
 export const useAppStore = create<AppState>((set) => ({
   currentRoute: "chat",
   sidebarCollapsed: false,
   inspectorOpen: true,
   activeInspectorTab: "agent",
   availableModels: AVAILABLE_MODELS,
-  authenticatedProviders: ["google-antigravity", "openai-codex", "openrouter"],
+  authenticatedProviders: [],
+  realProviders: [],
   activeModel: AVAILABLE_MODELS[0]!,
   activeScope: "~/projects/oh-my-shark",
   gitBranch: "main",
   tokenUsage: {
-    used: 1800000,
-    total: 4200000,
-    percent: 42,
+    used: 0,
+    total: 2000000,
+    percent: 0,
   },
   commandPaletteOpen: false,
   activeAgentMode: "Autônomo",
@@ -136,6 +99,7 @@ export const useAppStore = create<AppState>((set) => ({
     }, 4000);
   },
   dismissNotification: () => set({ notification: null }),
+
   syncBackendModels: async () => {
     try {
       const res = await fetch("/api/models");
@@ -160,12 +124,65 @@ export const useAppStore = create<AppState>((set) => ({
             authenticatedProviders: authed,
             activeModel: mappedModels[0]!,
           });
-        } else if (authed.length > 0) {
+        } else {
           set({ authenticatedProviders: authed });
+        }
+      }
+
+      // Consulta provedores reais
+      const provRes = await fetch("/api/providers");
+      if (provRes.ok) {
+        const provData = await provRes.json();
+        if (provData && provData.ok && Array.isArray(provData.providers)) {
+          const mappedProviders: AIProvider[] = provData.providers.map((p: any) => ({
+            id: p.id,
+            name: p.name,
+            status: p.status,
+            endpoint: p.isOAuth ? "OAuth 2.0 / Token Seguro" : "API Key / Endpoint Local",
+            latency: p.status === "connected" ? "120ms" : "---",
+            activeModelId: p.models?.[0]?.id || "",
+            models: Array.isArray(p.models)
+              ? p.models.map((m: any) => ({
+                  id: m.id,
+                  name: m.name,
+                  provider: p.name,
+                  contextWindow: "128k",
+                  maxOutput: "8k",
+                  pricing: { input: "Ativo", output: "Ativo" },
+                  latencyMs: 120,
+                  tags: [p.name],
+                }))
+              : [],
+          }));
+          set({ realProviders: mappedProviders });
         }
       }
     } catch {
       // Backend local em modo standalone; mantém modelos padrão
+    }
+  },
+
+  syncSystemStats: async () => {
+    try {
+      const res = await fetch("/api/system/stats");
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data && data.ok && data.stats) {
+        const s = data.stats;
+        const total = s.heapTotal || 2000000;
+        const used = s.heapUsed || 0;
+        const percent = Math.min(100, Math.round((used / total) * 100));
+        set({
+          activeScope: s.cwd || "~/projects/oh-my-shark",
+          tokenUsage: {
+            used,
+            total,
+            percent,
+          },
+        });
+      }
+    } catch {
+      // Ignore
     }
   },
 }));

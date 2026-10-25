@@ -26,10 +26,18 @@ export const TopBar: React.FC = () => {
     toggleSidebar,
     setCommandPaletteOpen,
     tokenUsage,
+    syncSystemStats,
   } = useAppStore();
 
   const [isFolderModalOpen, setIsFolderModalOpen] = React.useState(false);
 
+  React.useEffect(() => {
+    syncSystemStats();
+    const timer = setInterval(() => {
+      syncSystemStats();
+    }, 15000);
+    return () => clearInterval(timer);
+  }, [syncSystemStats]);
   return (
     <>
       <header

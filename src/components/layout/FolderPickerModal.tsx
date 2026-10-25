@@ -49,6 +49,13 @@ export const FolderPickerModal: React.FC<FolderPickerModalProps> = ({ isOpen, on
     try {
       const result = await pickNativeDirectory();
       if (result) {
+        try {
+          await fetch("/api/fs/set-directory", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ path: result.folderPath }),
+          });
+        } catch {}
         setWorkspaceFiles(result.folderPath, result.files, true);
         useAppStore.setState({ activeScope: result.folderPath });
         showNotification(`Pasta local conectada: ${result.folderName}`, "success");
@@ -66,6 +73,14 @@ export const FolderPickerModal: React.FC<FolderPickerModalProps> = ({ isOpen, on
     if (!browseData?.currentDir) return;
     setLoading(true);
     try {
+      try {
+        await fetch("/api/fs/set-directory", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ path: browseData.currentDir }),
+        });
+      } catch {}
+
       const treeRes = await fetchLocalTree(browseData.currentDir);
       if (treeRes.success) {
         const displayPath = browseData.currentDir.replace(browseData.homedir, "~");
@@ -80,7 +95,6 @@ export const FolderPickerModal: React.FC<FolderPickerModalProps> = ({ isOpen, on
       setLoading(false);
     }
   };
-
   return (
     <Modal
       isOpen={isOpen}

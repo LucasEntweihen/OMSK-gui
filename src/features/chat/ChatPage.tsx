@@ -11,7 +11,7 @@ import { MessageComposer } from "./components/MessageComposer";
 import type { ChatAttachment, ChatMessage } from "@/types";
 
 export const ChatPage: React.FC = () => {
-  const { messages, isGenerating, sendMessage, saveMessageToTeia } = useChatStore();
+  const { messages, isGenerating, sendMessage, abortGeneration, respondToAsk, saveMessageToTeia } = useChatStore();
   const { showNotification } = useAppStore();
   const threadEndRef = React.useRef<HTMLDivElement>(null);
   const [selectedPreviewAttachment, setSelectedPreviewAttachment] = React.useState<ChatAttachment | null>(null);
@@ -237,20 +237,60 @@ export const ChatPage: React.FC = () => {
                     <IdentifiedFilesCard files={msg.identifiedFiles} />
                   )}
 
-                  {/* Blinking Cursor para mensagem final interativa */}
-                  {!isUser && msg.id === "msg-2" && (
-                    <div style={{ marginTop: "8px", fontSize: "var(--text-md)", color: "var(--color-text)", display: "flex", alignItems: "center" }}>
-                      <span>Quer que eu comece a implementar a feature de autenticação agora?</span>
-                      <span
-                        className="animate-cursor-blink"
-                        style={{
-                          display: "inline-block",
-                          width: "8px",
-                          height: "15px",
-                          backgroundColor: "var(--blue-400)",
-                          marginLeft: "6px",
-                        }}
-                      />
+                  {/* Protocolo Ask User Interativo em Tempo Real */}
+                  {msg.askUser && (
+                    <div
+                      style={{
+                        margin: "12px 0",
+                        padding: "16px",
+                        borderRadius: "var(--radius-lg)",
+                        backgroundColor: "rgba(38, 120, 255, 0.08)",
+                        border: "1px solid var(--blue-500)",
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "12px",
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <span style={{ fontSize: "14px", fontWeight: 700, color: "var(--blue-400)" }}>
+                          ⚡ Autorização / Escolha do Operador:
+                        </span>
+                      </div>
+                      <div style={{ fontSize: "var(--text-sm)", color: "var(--color-text)", fontWeight: 600 }}>
+                        {msg.askUser.question}
+                      </div>
+                      <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                        {msg.askUser.options.map((opt) => {
+                          const isAnswered = msg.askUser?.answered === opt;
+                          return (
+                            <button
+                              key={opt}
+                              disabled={Boolean(msg.askUser?.answered)}
+                              onClick={() => {
+                                respondToAsk(msg.id, opt);
+                                showNotification(`Decisão registrada: "${opt}"`, "success");
+                              }}
+                              style={{
+                                padding: "6px 14px",
+                                borderRadius: "var(--radius-sm)",
+                                backgroundColor: isAnswered
+                                  ? "var(--blue-500)"
+                                  : msg.askUser?.answered
+                                    ? "var(--ocean-900)"
+                                    : "var(--ocean-850)",
+                                border: `1px solid ${isAnswered ? "var(--blue-400)" : "var(--color-border)"}`,
+                                color: isAnswered ? "#fff" : "var(--color-text)",
+                                fontSize: "var(--text-xs)",
+                                fontWeight: 600,
+                                cursor: msg.askUser?.answered ? "default" : "pointer",
+                                transition: "all var(--duration-fast)",
+                              }}
+                            >
+                              {opt} {isAnswered && "✓"}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                   )}
                 </div>

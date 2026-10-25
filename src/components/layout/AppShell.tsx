@@ -6,6 +6,7 @@ import { Sidebar } from "./Sidebar";
 import { InspectorPanel } from "./InspectorPanel";
 import { StatusBar } from "./StatusBar";
 import { CommandPalette } from "./CommandPalette";
+import { OnboardingModal } from "./OnboardingModal";
 import { useAppStore } from "@/store/useAppStore";
 import { CheckCircleIcon, AlertCircleIcon, CloseIcon } from "@/components/icons";
 
@@ -69,7 +70,8 @@ export const AppShell: React.FC = () => {
       {/* 4. Paleta de Comandos Global (⌘K) */}
       <CommandPalette />
 
-      {/* 5. Notificações Toast Flutuantes */}
+      {/* 4b. Modal de Onboarding & Configuração Real na Primeira Inicialização */}
+      <OnboardingModal />
       <AnimatePresence>
         {notification && (
           <motion.div

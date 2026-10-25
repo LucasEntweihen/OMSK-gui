@@ -75,6 +75,11 @@ export interface ChatMessage {
   };
   readonly toolExecutions?: readonly ToolExecutionRecord[];
   readonly identifiedFiles?: readonly IdentifiedFile[];
+  readonly askUser?: {
+    readonly question: string;
+    readonly options: readonly string[];
+    readonly answered?: string;
+  };
 }
 
 export type TaskStatus = 

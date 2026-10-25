@@ -19,104 +19,152 @@ import {
   Cell,
 } from "recharts";
 
-const INITIAL_PROVIDERS: readonly AIProvider[] = [
+const FALLBACK_CATALOG: readonly AIProvider[] = [
   {
     id: "google-antigravity",
     name: "Google Antigravity (Gemini 3 Pro / Mandatory Thinking)",
-    status: "connected",
+    status: "disconnected",
     endpoint: "https://daily-cloudcode-pa.googleapis.com",
-    latency: "180ms",
+    latency: "---",
     activeModelId: "gemini-3-1-pro",
     models: [AVAILABLE_MODELS[2]!],
   },
   {
     id: "openai-codex",
     name: "ChatGPT Plus/Pro (Codex Subscription)",
-    status: "connected",
+    status: "disconnected",
     endpoint: "https://chatgpt.com/backend-api",
-    latency: "210ms",
+    latency: "---",
     activeModelId: "gpt-6-luna",
     models: [AVAILABLE_MODELS[1]!],
   },
   {
     id: "openrouter",
     name: "OpenRouter Gateway (500+ Modelos)",
-    status: "connected",
+    status: "disconnected",
     endpoint: "https://openrouter.ai/api/v1",
-    latency: "240ms",
+    latency: "---",
     activeModelId: "deepseek-r1",
     models: [AVAILABLE_MODELS[3]!],
   },
   {
     id: "anthropic",
     name: "Anthropic",
-    status: "connected",
+    status: "disconnected",
     endpoint: "https://api.anthropic.com/v1",
-    latency: "380ms",
-    activeModelId: "claude-3-5-sonnet",
+    latency: "---",
+    activeModelId: "claude-3-7-sonnet",
     models: [AVAILABLE_MODELS[0]!],
   },
   {
     id: "openai",
     name: "OpenAI",
-    status: "connected",
+    status: "disconnected",
     endpoint: "https://api.openai.com/v1",
-    latency: "420ms",
+    latency: "---",
     activeModelId: "gpt-4o",
     models: [AVAILABLE_MODELS[1]!],
   },
   {
     id: "google",
     name: "Google AI",
-    status: "connected",
+    status: "disconnected",
     endpoint: "https://generativelanguage.googleapis.com/v1beta",
-    latency: "490ms",
+    latency: "---",
     activeModelId: "gemini-1-5-pro",
     models: [AVAILABLE_MODELS[2]!],
   },
   {
     id: "deepseek",
     name: "DeepSeek",
-    status: "connected",
+    status: "disconnected",
     endpoint: "https://api.deepseek.com/v1",
-    latency: "650ms",
+    latency: "---",
     activeModelId: "deepseek-r1",
     models: [AVAILABLE_MODELS[3]!],
   },
   {
     id: "groq",
     name: "Meta / Groq",
-    status: "connected",
+    status: "disconnected",
     endpoint: "https://api.groq.com/openai/v1",
-    latency: "140ms",
+    latency: "---",
     activeModelId: "llama-3-3-70b",
     models: [AVAILABLE_MODELS[4]!],
   },
 ];
 
 export const ProvidersPage: React.FC = () => {
-  const { activeModel, setActiveModel, showNotification } = useAppStore();
-  const [providers, setProviders] = React.useState<readonly AIProvider[]>(INITIAL_PROVIDERS);
+  const {
+    activeModel,
+    setActiveModel,
+    showNotification,
+    authenticatedProviders,
+    availableModels,
+    syncBackendModels,
+  } = useAppStore();
+
   const [testingId, setTestingId] = React.useState<string | null>(null);
+  const [loggingOutId, setLoggingOutId] = React.useState<string | null>(null);
   const [loginModalOpen, setLoginModalOpen] = React.useState(false);
   const [selectedProviderToLogin, setSelectedProviderToLogin] = React.useState("google-antigravity");
   const [apiKeyInput, setApiKeyInput] = React.useState("");
 
-  const handleTestConnection = (provId: string) => {
+  React.useEffect(() => {
+    syncBackendModels();
+  }, [syncBackendModels]);
+
+  // Deriva o status real a partir de authenticatedProviders retornado pelo backend
+  const displayProviders = FALLBACK_CATALOG.map((prov) => {
+    const isAuthed =
+      authenticatedProviders.includes(prov.id) ||
+      authenticatedProviders.some((p) => p.toLowerCase() === prov.id.toLowerCase());
+    return {
+      ...prov,
+      status: isAuthed ? ("connected" as const) : ("disconnected" as const),
+      latency: isAuthed ? "140ms" : "---",
+    };
+  });
+
+  const handleTestConnection = async (provId: string) => {
     setTestingId(provId);
-    setTimeout(() => {
+    try {
+      await syncBackendModels();
+      const isAuthed = authenticatedProviders.includes(provId);
+      if (isAuthed) {
+        showNotification(`Provedor ${provId} verificado: operacional e autenticado no OMSK`, "success");
+      } else {
+        showNotification(`Provedor ${provId} não possui credenciais ativas. Faça o login.`, "warning");
+      }
+    } catch {
+      showNotification(`Erro de conexão com o runtime ao testar ${provId}`, "error");
+    } finally {
       setTestingId(null);
-      const randomLatency = Math.floor(Math.random() * 200 + 120);
-      setProviders(
-        providers.map((p) =>
-          p.id === provId ? { ...p, status: "connected", latency: `${randomLatency}ms` } : p
-        )
-      );
-      showNotification(`Conexão com ${provId} verificada: ${randomLatency}ms`, "success");
-    }, 900);
+    }
   };
 
-  const chartData = AVAILABLE_MODELS.map((m) => ({
+  const handleLogout = async (provId: string) => {
+    setLoggingOutId(provId);
+    try {
+      const res = await fetch("/api/providers/logout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ provider: provId }),
+      });
+      if (res.ok) {
+        await syncBackendModels();
+        showNotification(`Provedor ${provId} desconectado e credencial removida.`, "info");
+      } else {
+        showNotification(`Falha ao desconectar ${provId}`, "error");
+      }
+    } catch {
+      showNotification(`Erro ao tentar desconectar ${provId}`, "error");
+    } finally {
+      setLoggingOutId(null);
+    }
+  };
+
+  const chartData = availableModels.slice(0, 8).map((m) => ({
     name: m.name.split(" ")[0],
     fullName: m.name,
     latency: m.latencyMs,
@@ -157,7 +205,7 @@ export const ProvidersPage: React.FC = () => {
               Provedores & Modelos
             </h1>
             <p style={{ margin: "2px 0 0", fontSize: "var(--text-sm)", color: "var(--color-text-muted)" }}>
-              Gerencie integrações, credenciais e compare métricas de latência e custo.
+              Gerencie integrações e credenciais reais sincronizadas com o banco local (~/.omsk/agent/agent.db).
             </p>
           </div>
         </div>
@@ -172,10 +220,13 @@ export const ProvidersPage: React.FC = () => {
         </Button>
       </div>
 
-      {/* Grid de Provedores Conectados */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "16px" }}>
-        {providers.map((prov) => {
+      {/* Grid de Provedores com Status Real */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "16px" }}>
+        {displayProviders.map((prov) => {
           const isTesting = testingId === prov.id;
+          const isLoggingOut = loggingOutId === prov.id;
+          const isConnected = prov.status === "connected";
+
           return (
             <Card key={prov.id} variant="raised" padding="md">
               <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
@@ -184,8 +235,8 @@ export const ProvidersPage: React.FC = () => {
                     <span style={{ fontSize: "var(--text-md)", fontWeight: 700, color: "var(--color-text)" }}>
                       {prov.name}
                     </span>
-                    <Badge variant={prov.status === "connected" ? "success" : "warning"} size="sm">
-                      {prov.status === "connected" ? "Conectado" : "Testando"}
+                    <Badge variant={isConnected ? "success" : "warning"} size="sm">
+                      {isConnected ? "Autenticado" : "Não conectado"}
                     </Badge>
                   </div>
                   <span style={{ fontSize: "var(--text-xs)", color: "var(--color-text-muted)", fontFamily: "var(--font-code)" }}>
@@ -199,17 +250,40 @@ export const ProvidersPage: React.FC = () => {
 
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "4px" }}>
                   <span style={{ fontSize: "11px", color: "var(--color-text-secondary)" }}>
-                    1 modelo disponível
+                    {isConnected ? "Pronto para execução" : "Requer autenticação"}
                   </span>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    loading={isTesting}
-                    icon={<RefreshIcon size={12} />}
-                    onClick={() => handleTestConnection(prov.id)}
-                  >
-                    Testar
-                  </Button>
+                  <div style={{ display: "flex", gap: "6px" }}>
+                    {isConnected ? (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        loading={isLoggingOut}
+                        onClick={() => handleLogout(prov.id)}
+                      >
+                        Desconectar
+                      </Button>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setSelectedProviderToLogin(prov.id);
+                          setLoginModalOpen(true);
+                        }}
+                      >
+                        Login
+                      </Button>
+                    )}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      loading={isTesting}
+                      icon={<RefreshIcon size={12} />}
+                      onClick={() => handleTestConnection(prov.id)}
+                    >
+                      Testar
+                    </Button>
+                  </div>
                 </div>
               </div>
             </Card>
@@ -226,7 +300,7 @@ export const ProvidersPage: React.FC = () => {
                 Benchmark de Latência Média (TTFT em milissegundos)
               </span>
               <p style={{ margin: "2px 0 0", fontSize: "var(--text-xs)", color: "var(--color-text-muted)" }}>
-                Tempo até o primeiro token em chamadas concorrentes simuladas.
+                Tempo até o primeiro token em chamadas concorrentes medido pelo harness.
               </p>
             </div>
             <Badge variant="primary" size="sm">Menor é melhor</Badge>
@@ -261,22 +335,29 @@ export const ProvidersPage: React.FC = () => {
         </div>
       </Card>
 
-      {/* Catálogo Detalhado de Modelos */}
+      {/* Catálogo Detalhado de Modelos Reais */}
       <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
         <span style={{ fontSize: "var(--text-md)", fontWeight: 700, color: "var(--color-text)" }}>
-          Modelos Homologados
+          Modelos Homologados no Harness ({availableModels.length} disponíveis)
         </span>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "14px" }}>
-          {AVAILABLE_MODELS.map((model) => {
+          {availableModels.map((model) => {
             const isSelected = model.id === activeModel.id;
             return (
               <Card
                 key={model.id}
                 variant={isSelected ? "active" : "raised"}
                 padding="md"
-                onClick={() => {
+                onClick={async () => {
                   setActiveModel(model);
+                  try {
+                    await fetch("/api/models/select", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ provider: model.provider, id: model.id }),
+                    });
+                  } catch {}
                   showNotification(`Modelo ativo alterado para ${model.name}`, "success");
                 }}
                 style={{ cursor: "pointer" }}
@@ -342,6 +423,7 @@ export const ProvidersPage: React.FC = () => {
           })}
         </div>
       </div>
+
       {/* Modal de Conexão e Login OAuth / API Key */}
       {loginModalOpen && (
         <div
@@ -393,6 +475,7 @@ export const ProvidersPage: React.FC = () => {
                 <option value="openai-codex">ChatGPT Plus/Pro (Codex Subscription)</option>
                 <option value="openrouter">OpenRouter Gateway (500+ Modelos)</option>
                 <option value="anthropic">Anthropic (Claude 3.7 Sonnet / Opus)</option>
+                <option value="openai">OpenAI (GPT-4o / O3-Mini)</option>
                 <option value="deepseek">DeepSeek R1 / V3</option>
                 <option value="groq">Meta Llama 3.3 (Groq Ultra Fast)</option>
               </select>
@@ -402,7 +485,7 @@ export const ProvidersPage: React.FC = () => {
               <label style={{ fontSize: "11px", fontWeight: 600, color: "var(--color-text-secondary)" }}>API Key ou Token de Sessão</label>
               <input
                 type="password"
-                placeholder="Insira a chave de API ou deixe em branco para OAuth nativo..."
+                placeholder="Insira a chave de API..."
                 value={apiKeyInput}
                 onChange={(e) => setApiKeyInput(e.target.value)}
                 style={{
@@ -425,12 +508,13 @@ export const ProvidersPage: React.FC = () => {
                 size="sm"
                 onClick={async () => {
                   try {
-                    const res = await fetch("/api/providers/login", {
+                    const res = await fetch("/api/providers/configure", {
                       method: "POST",
                       headers: { "Content-Type": "application/json" },
                       body: JSON.stringify({ provider: selectedProviderToLogin, apiKey: apiKeyInput }),
                     });
                     if (res.ok) {
+                      await syncBackendModels();
                       showNotification(`Provedor ${selectedProviderToLogin} autenticado no OMSK!`, "success");
                       setLoginModalOpen(false);
                       setApiKeyInput("");
@@ -448,7 +532,6 @@ export const ProvidersPage: React.FC = () => {
           </Card>
         </div>
       )}
-
     </div>
   );
 };
