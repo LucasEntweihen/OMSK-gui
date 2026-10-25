@@ -52,14 +52,20 @@
     "win": {
       "target": [
         {
-          "target": "portable",
+          "target": "nsis",
           "arch": [
             "x64"
           ]
         }
       ]
     },
-    "artifactName": "${productName}.${ext}"
+    "artifactName": "${productName}.${ext}",
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowElevation": false,
+      "deleteAppDataOnUninstall": false
+    }
   },
   "productName": "OMSK GUI"
 }
