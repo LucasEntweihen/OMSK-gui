@@ -5,12 +5,12 @@
 
 :root {
   /* Color primitives */
-  --ocean-950: #240a34; /* Fundo principal */
-  --ocean-900: #301042; /* Painéis e áreas de trabalho */
-  --ocean-850: #3d1454; /* Cards e superfícies elevadas */
-  --ocean-800: #4a1966; /* Hover, seleção suave e superfícies ativas */
-  --ocean-750: #143054;
-  --ocean-700: #193d6b;
+  --ocean-950: #120524; /* Fundo principal */
+  --ocean-900: #1c0836; /* Painéis e áreas de trabalho */
+  --ocean-850: #270c4b; /* Cards e superfícies elevadas */
+  --ocean-800: #361266; /* Hover, seleção suave e superfícies ativas */
+  --ocean-750: #4a198c;
+  --ocean-700: #5c1fb0;
 
   /* Interaction Blue */
   --blue-500: #2678FF;  /* Ação primária, seleção, foco */
@@ -27,9 +27,9 @@
   --color-text: #E8F1FF;
   --color-text-secondary: #9CB4D4;
   --color-text-muted: #6985A9;
-  --color-border: #173353;
-  --color-border-subtle: #173353;
-  --color-border-hover: #264a75;
+  --color-border: #381566;
+  --color-border-subtle: #2d1052;
+  --color-border-hover: #6020b8;
   --color-focus: var(--blue-500);
   --color-primary: var(--blue-500);
 

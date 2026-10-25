@@ -26,6 +26,26 @@ export interface NativeDirectoryResult {
  * através da File System Access API padrão (window.showDirectoryPicker).
  */
 export async function pickNativeDirectory(): Promise<NativeDirectoryResult | null> {
+  const electronApi = (window as any).electronAPI;
+  if (electronApi && typeof electronApi.openDirectory === "function") {
+    try {
+      const selectedPath = await electronApi.openDirectory();
+      if (!selectedPath) return null;
+
+      // Obtém árvore de arquivos do diretório escolhido
+      const treeRes = await fetchLocalTree(selectedPath);
+      const folderName = selectedPath.replace(/\\/g, "/").split("/").pop() || "workspace";
+
+      return {
+        folderName,
+        folderPath: selectedPath.replace(/\\/g, "/"),
+        files: treeRes.tree,
+      };
+    } catch {
+      // Fallback
+    }
+  }
+
   const windowObj = window as unknown as {
     showDirectoryPicker?: (options?: { mode?: "read" | "readwrite" }) => Promise<FileSystemDirectoryHandleLike>;
   };
@@ -34,7 +54,7 @@ export async function pickNativeDirectory(): Promise<NativeDirectoryResult | nul
     try {
       const dirHandle = await windowObj.showDirectoryPicker({ mode: "read" });
       const folderName = dirHandle.name;
-      const folderPath = `~/${folderName}`;
+      const folderPath = "~/" + folderName;
       const files = await scanDirectoryHandle(dirHandle, folderPath, 2);
 
       return {
@@ -44,7 +64,6 @@ export async function pickNativeDirectory(): Promise<NativeDirectoryResult | nul
       };
     } catch (err: unknown) {
       if (err instanceof Error && err.name === "AbortError") {
-        // Usuário cancelou a seleção nativa
         return null;
       }
       throw err;

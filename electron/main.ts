@@ -365,6 +365,7 @@ function startEmbeddedServer(distDir: string): Promise<number> {
       return;
     }
 
+    // 7. Navegação no Diretório Local (/api/fs/browse)
     if (pathname === "/api/fs/browse") {
       const reqDir = urlObj.searchParams.get("dir") || process.cwd();
       try {
@@ -394,6 +395,104 @@ function startEmbeddedServer(distDir: string): Promise<number> {
         res.writeHead(500, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ success: false, error: message }));
       }
+      return;
+    }
+
+    // 8. Árvore de Arquivos Recursiva do Workspace (/api/fs/tree)
+    if (pathname === "/api/fs/tree") {
+      const reqDir = urlObj.searchParams.get("dir") || process.cwd();
+      try {
+        const resolvedPath = path.resolve(reqDir.replace(/^~/, os.homedir()));
+
+        function scanTree(dir: string, depth = 0, maxDepth = 2): any[] {
+          if (depth > maxDepth) return [];
+          const items: any[] = [];
+          try {
+            const dirents = fs.readdirSync(dir, { withFileTypes: true });
+            for (const d of dirents) {
+              if (d.name.startsWith(".git") || d.name === "node_modules" || d.name === "dist") continue;
+              const full = path.join(dir, d.name).replace(/\\/g, "/");
+              if (d.isDirectory()) {
+                items.push({
+                  id: "dir-" + full,
+                  name: d.name,
+                  path: full,
+                  type: "directory",
+                  availability: "selected",
+                  isExpanded: depth === 0,
+                  children: scanTree(full, depth + 1, maxDepth),
+                });
+              } else {
+                let sizeStr = "";
+                try {
+                  const s = fs.statSync(full).size;
+                  sizeStr = (s / 1024).toFixed(1) + " KB";
+                } catch {}
+                items.push({
+                  id: "file-" + full,
+                  name: d.name,
+                  path: full,
+                  type: "file",
+                  availability: "available",
+                  size: sizeStr,
+                });
+              }
+            }
+          } catch {}
+          return items;
+        }
+
+        const tree = scanTree(resolvedPath);
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({
+          success: true,
+          ok: true,
+          rootPath: resolvedPath.replace(/\\/g, "/"),
+          tree,
+        }));
+      } catch (err: unknown) {
+        res.writeHead(500, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ success: false, error: String(err) }));
+      }
+      return;
+    }
+
+    // 9. Alterar Diretório do Workspace no Servidor (/api/fs/set-directory)
+    if (pathname === "/api/fs/set-directory" && req.method === "POST") {
+      let body = "";
+      req.on("data", (chunk) => { body += chunk; });
+      req.on("end", () => {
+        try {
+          const { path: dirPath } = JSON.parse(body || "{}");
+          if (!dirPath) {
+            res.writeHead(400, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ ok: false, error: "Missing directory path" }));
+            return;
+          }
+
+          const targetDir = path.resolve(dirPath.replace(/^~/, os.homedir()));
+          if (!fs.existsSync(targetDir) || !fs.statSync(targetDir).isDirectory()) {
+            res.writeHead(400, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ ok: false, error: "Diretório inexistente ou inválido" }));
+            return;
+          }
+
+          // Atualiza o diretório de trabalho do processo Electron
+          try {
+            process.chdir(targetDir);
+          } catch {}
+
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({
+            ok: true,
+            currentDir: targetDir.replace(/\\/g, "/"),
+            message: "Diretório de trabalho atualizado com sucesso.",
+          }));
+        } catch (err) {
+          res.writeHead(500, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: false, error: String(err) }));
+        }
+      });
       return;
     }
 
