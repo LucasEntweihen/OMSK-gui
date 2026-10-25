@@ -28,9 +28,41 @@ const DEFAULT_SETTINGS: AppSettings = SettingsSchema.parse({});
 
 const STORAGE_KEY = "oh-my-shark-settings-v1";
 
+// Cache in-memory para ambientes onde window.localStorage não existe (ex: CLI / testes)
+const inMemoryStorage = new Map<string, string>();
+
+function getStorageItem(key: string): string | null {
+  try {
+    if (typeof localStorage !== "undefined") {
+      return localStorage.getItem(key);
+    }
+  } catch {}
+  return inMemoryStorage.get(key) ?? null;
+}
+
+function setStorageItem(key: string, value: string): void {
+  try {
+    if (typeof localStorage !== "undefined") {
+      localStorage.setItem(key, value);
+      return;
+    }
+  } catch {}
+  inMemoryStorage.set(key, value);
+}
+
+function removeStorageItem(key: string): void {
+  try {
+    if (typeof localStorage !== "undefined") {
+      localStorage.removeItem(key);
+      return;
+    }
+  } catch {}
+  inMemoryStorage.delete(key);
+}
+
 function loadPersistedSettings(): AppSettings {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = getStorageItem(STORAGE_KEY);
     if (!raw) return DEFAULT_SETTINGS;
     const parsed = JSON.parse(raw);
     const result = SettingsSchema.safeParse(parsed);
@@ -66,19 +98,18 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   saveSettings: () => {
     const current = get().settings;
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(current));
+      setStorageItem(STORAGE_KEY, JSON.stringify(current));
       set({ isSaved: true, hasUnsavedChanges: false });
     } catch {
-      // Falha de persistência
+      // Fallback
+      set({ isSaved: true, hasUnsavedChanges: false });
     }
   },
 
   resetDefaults: () => {
     try {
-      localStorage.removeItem(STORAGE_KEY);
-      set({ settings: DEFAULT_SETTINGS, isSaved: true, hasUnsavedChanges: false });
-    } catch {
-      // Ignorar falha
-    }
+      removeStorageItem(STORAGE_KEY);
+    } catch {}
+    set({ settings: DEFAULT_SETTINGS, isSaved: true, hasUnsavedChanges: false });
   },
 }));
