@@ -5,10 +5,10 @@
 
 :root {
   /* Color primitives */
-  --ocean-950: #020A16; /* Fundo principal */
-  --ocean-900: #061326; /* Painéis e áreas de trabalho */
-  --ocean-850: #091A31; /* Cards e superfícies elevadas */
-  --ocean-800: #102641; /* Hover, seleção suave e superfícies ativas */
+  --ocean-950: #240a34; /* Fundo principal */
+  --ocean-900: #301042; /* Painéis e áreas de trabalho */
+  --ocean-850: #3d1454; /* Cards e superfícies elevadas */
+  --ocean-800: #4a1966; /* Hover, seleção suave e superfícies ativas */
   --ocean-750: #143054;
   --ocean-700: #193d6b;
 

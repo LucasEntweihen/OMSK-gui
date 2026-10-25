@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { useAppStore, AVAILABLE_MODELS } from "@/store/useAppStore";
 import type { AIProvider } from "@/types";
+import FULL_CATALOG_RAW from "@/services/providerCatalog.generated.json";
 import {
   BarChart,
   Bar,
@@ -18,6 +19,15 @@ import {
   ResponsiveContainer,
   Cell,
 } from "recharts";
+
+
+interface CatalogMeta {
+  readonly id: string;
+  readonly name: string;
+  readonly kind: string;
+}
+
+const ALL_HARNESS_PROVIDERS: readonly CatalogMeta[] = FULL_CATALOG_RAW as CatalogMeta[];
 
 const FALLBACK_CATALOG: readonly AIProvider[] = [
   {
@@ -104,11 +114,14 @@ export const ProvidersPage: React.FC = () => {
     syncBackendModels,
   } = useAppStore();
 
-  const [testingId, setTestingId] = React.useState<string | null>(null);
+    const [testingId, setTestingId] = React.useState<string | null>(null);
   const [loggingOutId, setLoggingOutId] = React.useState<string | null>(null);
   const [loginModalOpen, setLoginModalOpen] = React.useState(false);
   const [selectedProviderToLogin, setSelectedProviderToLogin] = React.useState("google-antigravity");
   const [apiKeyInput, setApiKeyInput] = React.useState("");
+  const [providerSearch, setProviderSearch] = React.useState("");
+  const [filterMode, setFilterMode] = React.useState<"all" | "connected" | "oauth" | "apikey">("all");
+  const [loggingInWeb, setLoggingInWeb] = React.useState(false);
 
   React.useEffect(() => {
     syncBackendModels();
@@ -140,6 +153,31 @@ export const ProvidersPage: React.FC = () => {
       showNotification(`Erro de conexão com o runtime ao testar ${provId}`, "error");
     } finally {
       setTestingId(null);
+    }
+  };
+
+  
+  const handleWebLogin = async (provId: string) => {
+    setLoggingInWeb(true);
+    try {
+      showNotification("Iniciando autenticação Web para " + provId + ". Abrindo navegador...", "info");
+      const res = await fetch("/api/providers/oauth-login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ provider: provId }),
+      });
+      const data = await res.json();
+      if (data && data.ok) {
+        showNotification(data.message || "Navegador aberto! Complete a autenticação na página.", "success");
+        setTimeout(() => syncBackendModels(), 4000);
+        setTimeout(() => syncBackendModels(), 10000);
+      } else {
+        showNotification(data?.error || "Falha ao iniciar autenticação web", "error");
+      }
+    } catch {
+      showNotification("Erro de conexão com o runtime OMSK", "error");
+    } finally {
+      setLoggingInWeb(false);
     }
   };
 
@@ -218,6 +256,48 @@ export const ProvidersPage: React.FC = () => {
         >
           + Conectar / Login Provedor
         </Button>
+      </div>
+
+      
+      {/* Barra de Busca e Filtros Rápidos */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+        <input
+          type="text"
+          placeholder="Buscar entre os 70 provedores oficiais..."
+          value={providerSearch}
+          onChange={(e) => setProviderSearch(e.target.value)}
+          style={{
+            flex: "1 1 260px",
+            maxWidth: "400px",
+            padding: "8px 12px",
+            borderRadius: "var(--radius-sm)",
+            backgroundColor: "var(--ocean-900)",
+            border: "1px solid var(--color-border)",
+            color: "var(--color-text)",
+            fontSize: "var(--text-xs)",
+          }}
+        />
+
+        <div style={{ display: "flex", gap: "6px" }}>
+          {(["all", "connected", "oauth", "apikey"] as const).map((m) => (
+            <button
+              key={m}
+              onClick={() => setFilterMode(m)}
+              style={{
+                padding: "6px 12px",
+                borderRadius: "var(--radius-sm)",
+                border: "1px solid " + (filterMode === m ? "var(--blue-500)" : "var(--color-border)"),
+                backgroundColor: filterMode === m ? "rgba(38, 120, 255, 0.2)" : "var(--ocean-900)",
+                color: filterMode === m ? "var(--color-text)" : "var(--color-text-muted)",
+                fontSize: "11px",
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              {m === "all" ? "Todos (" + ALL_HARNESS_PROVIDERS.length + ")" : m === "connected" ? "Conectados" : m === "oauth" ? "OAuth / Web" : "API Key"}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Grid de Provedores com Status Real */}
@@ -471,13 +551,11 @@ export const ProvidersPage: React.FC = () => {
                   fontSize: "var(--text-xs)",
                 }}
               >
-                <option value="google-antigravity">Google Antigravity (Gemini 3 Pro / Mandatory Thinking)</option>
-                <option value="openai-codex">ChatGPT Plus/Pro (Codex Subscription)</option>
-                <option value="openrouter">OpenRouter Gateway (500+ Modelos)</option>
-                <option value="anthropic">Anthropic (Claude 3.7 Sonnet / Opus)</option>
-                <option value="openai">OpenAI (GPT-4o / O3-Mini)</option>
-                <option value="deepseek">DeepSeek R1 / V3</option>
-                <option value="groq">Meta Llama 3.3 (Groq Ultra Fast)</option>
+                {ALL_HARNESS_PROVIDERS.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} ({p.id}) {p.kind === "oauth-code" || p.kind === "device-code" ? "• Web OAuth" : "• API Key"}
+                  </option>
+                ))}
               </select>
             </div>
 
@@ -499,37 +577,58 @@ export const ProvidersPage: React.FC = () => {
               />
             </div>
 
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", marginTop: "8px" }}>
-              <Button variant="ghost" size="sm" onClick={() => setLoginModalOpen(false)}>
-                Cancelar
-              </Button>
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={async () => {
-                  try {
-                    const res = await fetch("/api/providers/configure", {
-                      method: "POST",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ provider: selectedProviderToLogin, apiKey: apiKeyInput }),
-                    });
-                    if (res.ok) {
-                      await syncBackendModels();
-                      showNotification(`Provedor ${selectedProviderToLogin} autenticado no OMSK!`, "success");
+            
+            <div style={{ display: "flex", justifyContent: "space-between", gap: "8px", marginTop: "8px" }}>
+              {(() => {
+                const target = ALL_HARNESS_PROVIDERS.find((p) => p.id === selectedProviderToLogin);
+                const isTargetOAuth = target && (target.kind === "oauth-code" || target.kind === "device-code" || target.kind === "custom");
+                return isTargetOAuth ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    loading={loggingInWeb}
+                    onClick={() => {
+                      handleWebLogin(selectedProviderToLogin);
                       setLoginModalOpen(false);
-                      setApiKeyInput("");
-                    } else {
-                      showNotification("Falha ao salvar credencial no OMSK", "error");
+                    }}
+                  >
+                    🌐 Autenticar pelo Navegador (Web)
+                  </Button>
+                ) : <span />;
+              })()}
+
+              <div style={{ display: "flex", gap: "8px" }}>
+                <Button variant="ghost" size="sm" onClick={() => setLoginModalOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={async () => {
+                    try {
+                      const res = await fetch("/api/providers/configure", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ provider: selectedProviderToLogin, apiKey: apiKeyInput }),
+                      });
+                      if (res.ok) {
+                        await syncBackendModels();
+                        showNotification("Provedor " + selectedProviderToLogin + " autenticado no OMSK!", "success");
+                        setLoginModalOpen(false);
+                        setApiKeyInput("");
+                      } else {
+                        showNotification("Falha ao salvar credencial no OMSK", "error");
+                      }
+                    } catch {
+                      showNotification("Erro de conexão com o runtime OMSK", "error");
                     }
-                  } catch {
-                    showNotification("Erro de conexão com o runtime OMSK", "error");
-                  }
-                }}
-              >
-                Salvar Credencial & Conectar
-              </Button>
+                  }}
+                >
+                  Salvar Credencial & Conectar
+                </Button>
+              </div>
             </div>
-          </Card>
+      </Card>
         </div>
       )}
     </div>

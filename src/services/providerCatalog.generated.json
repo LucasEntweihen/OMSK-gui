@@ -1,0 +1,352 @@
+[
+  {
+    "id": "openai-codex",
+    "name": "ChatGPT Plus/Pro (Codex Subscription)",
+    "kind": "oauth-code"
+  },
+  {
+    "id": "anthropic",
+    "name": "Anthropic (Claude Pro/Max)",
+    "kind": "oauth-code"
+  },
+  {
+    "id": "zai",
+    "name": "Z.AI (GLM Coding Plan)",
+    "kind": "api-key"
+  },
+  {
+    "id": "zai-coding-plan",
+    "name": "Z.AI (GLM Coding Plan · Sign in)",
+    "kind": "oauth-code"
+  },
+  {
+    "id": "kimi-code",
+    "name": "Kimi Code",
+    "kind": "device-code"
+  },
+  {
+    "id": "openrouter",
+    "name": "OpenRouter",
+    "kind": "oauth-code"
+  },
+  {
+    "id": "github-copilot",
+    "name": "GitHub Copilot",
+    "kind": "custom"
+  },
+  {
+    "id": "cursor",
+    "name": "Cursor (Claude, GPT, etc.)",
+    "kind": "custom"
+  },
+  {
+    "id": "devin",
+    "name": "Devin",
+    "kind": "oauth-code"
+  },
+  {
+    "id": "google-antigravity",
+    "name": "Antigravity (Gemini 3, Claude, GPT-OSS)",
+    "kind": "oauth-code"
+  },
+  {
+    "id": "google-gemini-cli",
+    "name": "Google Cloud Code Assist (Gemini CLI)",
+    "kind": "oauth-code"
+  },
+  {
+    "id": "openai-codex-device",
+    "name": "ChatGPT Plus/Pro (Codex, headless/device)",
+    "kind": "custom"
+  },
+  {
+    "id": "xai",
+    "name": "xAI API",
+    "kind": "api-key"
+  },
+  {
+    "id": "xai-oauth",
+    "name": "xAI Grok OAuth (SuperGrok or X Premium+)",
+    "kind": "device-code"
+  },
+  {
+    "id": "gitlab-duo",
+    "name": "GitLab Duo Non-Agentic",
+    "kind": "oauth-code"
+  },
+  {
+    "id": "gitlab-duo-agent",
+    "name": "GitLab Duo Agent",
+    "kind": "oauth-code"
+  },
+  {
+    "id": "alibaba-coding-plan",
+    "name": "Alibaba Coding Plan",
+    "kind": "custom"
+  },
+  {
+    "id": "alibaba-token-plan",
+    "name": "QwenCloud Token Plan",
+    "kind": "custom"
+  },
+  {
+    "id": "aiand",
+    "name": "ai&",
+    "kind": "api-key"
+  },
+  {
+    "id": "abliteration",
+    "name": "Abliteration",
+    "kind": "api-key"
+  },
+  {
+    "id": "zhipu-coding-plan",
+    "name": "Zhipu Coding Plan (智谱)",
+    "kind": "api-key"
+  },
+  {
+    "id": "umans",
+    "name": "Umans AI Coding Plan",
+    "kind": "api-key"
+  },
+  {
+    "id": "qwen-portal",
+    "name": "Qwen Portal",
+    "kind": "api-key"
+  },
+  {
+    "id": "sakana",
+    "name": "Sakana AI",
+    "kind": "api-key"
+  },
+  {
+    "id": "minimax-code",
+    "name": "MiniMax Token Plan (International)",
+    "kind": "api-key"
+  },
+  {
+    "id": "minimax-code-cn",
+    "name": "MiniMax Token Plan (China)",
+    "kind": "api-key"
+  },
+  {
+    "id": "xiaomi",
+    "name": "Xiaomi MiMo",
+    "kind": "custom"
+  },
+  {
+    "id": "xiaomi-token-plan-sgp",
+    "name": "Xiaomi Token Plan (Singapore)",
+    "kind": "api-key"
+  },
+  {
+    "id": "xiaomi-token-plan-ams",
+    "name": "Xiaomi Token Plan (Europe)",
+    "kind": "api-key"
+  },
+  {
+    "id": "xiaomi-token-plan-cn",
+    "name": "Xiaomi Token Plan (China)",
+    "kind": "api-key"
+  },
+  {
+    "id": "firepass",
+    "name": "Fire Pass (Fireworks Kimi K2.6 Turbo subscription)",
+    "kind": "api-key"
+  },
+  {
+    "id": "cline-pass",
+    "name": "ClinePass",
+    "kind": "api-key"
+  },
+  {
+    "id": "deepseek",
+    "name": "DeepSeek",
+    "kind": "api-key"
+  },
+  {
+    "id": "meta",
+    "name": "Meta Model API",
+    "kind": "api-key"
+  },
+  {
+    "id": "moonshot",
+    "name": "Moonshot (Kimi API)",
+    "kind": "api-key"
+  },
+  {
+    "id": "cerebras",
+    "name": "Cerebras",
+    "kind": "api-key"
+  },
+  {
+    "id": "baseten",
+    "name": "Baseten",
+    "kind": "api-key"
+  },
+  {
+    "id": "fireworks",
+    "name": "Fireworks",
+    "kind": "api-key"
+  },
+  {
+    "id": "together",
+    "name": "Together",
+    "kind": "api-key"
+  },
+  {
+    "id": "nvidia",
+    "name": "NVIDIA",
+    "kind": "api-key"
+  },
+  {
+    "id": "novita",
+    "name": "Novita",
+    "kind": "api-key"
+  },
+  {
+    "id": "deepinfra",
+    "name": "DeepInfra",
+    "kind": "api-key"
+  },
+  {
+    "id": "huggingface",
+    "name": "Hugging Face Inference",
+    "kind": "api-key"
+  },
+  {
+    "id": "perplexity",
+    "name": "Perplexity (Pro/Max)",
+    "kind": "custom"
+  },
+  {
+    "id": "qianfan",
+    "name": "Qianfan",
+    "kind": "api-key"
+  },
+  {
+    "id": "venice",
+    "name": "Venice",
+    "kind": "api-key"
+  },
+  {
+    "id": "siliconflow",
+    "name": "SiliconFlow",
+    "kind": "api-key"
+  },
+  {
+    "id": "siliconflow-cn",
+    "name": "SiliconFlow (China)",
+    "kind": "api-key"
+  },
+  {
+    "id": "synthetic",
+    "name": "Synthetic",
+    "kind": "api-key"
+  },
+  {
+    "id": "nanogpt",
+    "name": "NanoGPT",
+    "kind": "api-key"
+  },
+  {
+    "id": "wafer-serverless",
+    "name": "Wafer Serverless (pay-as-you-go)",
+    "kind": "api-key"
+  },
+  {
+    "id": "coreweave",
+    "name": "CoreWeave Serverless Inference",
+    "kind": "api-key"
+  },
+  {
+    "id": "vercel-ai-gateway",
+    "name": "Vercel AI Gateway",
+    "kind": "api-key"
+  },
+  {
+    "id": "cloudflare-ai-gateway",
+    "name": "Cloudflare AI Gateway",
+    "kind": "custom"
+  },
+  {
+    "id": "litellm",
+    "name": "LiteLLM",
+    "kind": "api-key"
+  },
+  {
+    "id": "kilo",
+    "name": "Kilo Gateway",
+    "kind": "custom"
+  },
+  {
+    "id": "zenmux",
+    "name": "ZenMux",
+    "kind": "api-key"
+  },
+  {
+    "id": "opencode-zen",
+    "name": "OpenCode Zen",
+    "kind": "api-key"
+  },
+  {
+    "id": "opencode-go",
+    "name": "OpenCode Go",
+    "kind": "api-key"
+  },
+  {
+    "id": "yolo-auto",
+    "name": "Yolo-Auto",
+    "kind": "api-key"
+  },
+  {
+    "id": "tavily",
+    "name": "Tavily",
+    "kind": "api-key"
+  },
+  {
+    "id": "kagi",
+    "name": "Kagi",
+    "kind": "api-key"
+  },
+  {
+    "id": "exa",
+    "name": "Exa",
+    "kind": "api-key"
+  },
+  {
+    "id": "parallel",
+    "name": "Parallel",
+    "kind": "api-key"
+  },
+  {
+    "id": "ollama",
+    "name": "Ollama (Local OpenAI-compatible)",
+    "kind": "api-key"
+  },
+  {
+    "id": "ollama-cloud",
+    "name": "Ollama Cloud",
+    "kind": "api-key"
+  },
+  {
+    "id": "lm-studio",
+    "name": "LM Studio (Local OpenAI-compatible)",
+    "kind": "api-key"
+  },
+  {
+    "id": "llama.cpp",
+    "name": "llama.cpp (Local OpenAI-compatible)",
+    "kind": "api-key"
+  },
+  {
+    "id": "vllm",
+    "name": "vLLM (Local OpenAI-compatible)",
+    "kind": "api-key"
+  },
+  {
+    "id": "gmi-cloud",
+    "name": "GMI Cloud",
+    "kind": "api-key"
+  }
+]

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { SharkFinIcon } from "@/components/icons";
 import { useAppStore } from "@/store/useAppStore";
+import FULL_CATALOG_RAW from "@/services/providerCatalog.generated.json";
 
 export const OnboardingModal: React.FC = () => {
   const {
@@ -28,6 +29,36 @@ export const OnboardingModal: React.FC = () => {
   // Se o usuário já autenticou pelo menos um provider ou já completou o onboarding, não bloqueia
   const hasAuth = authenticatedProviders.length > 0;
   const isOpen = !hasDismissed && !hasAuth;
+
+  
+  const [loggingInWeb, setLoggingInWeb] = React.useState(false);
+
+  const handleWebLogin = async () => {
+    setLoggingInWeb(true);
+    try {
+      showNotification("Iniciando autenticação Web para " + selectedProvider + "...", "info");
+      const res = await fetch("/api/providers/oauth-login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ provider: selectedProvider }),
+      });
+      const data = await res.json();
+      if (data && data.ok) {
+        showNotification(data.message || "Navegador aberto! Complete o login.", "success");
+        setTimeout(async () => {
+          await syncBackendModels();
+          try { localStorage.setItem("oms_onboarding_completed", "true"); } catch {}
+          setHasDismissed(true);
+        }, 8000);
+      } else {
+        showNotification(data?.error || "Falha ao iniciar autenticação web", "error");
+      }
+    } catch {
+      showNotification("Erro ao comunicar com backend OMSK", "error");
+    } finally {
+      setLoggingInWeb(false);
+    }
+  };
 
   const handleSaveCredential = async () => {
     if (!apiKey.trim()) {
@@ -146,13 +177,11 @@ export const OnboardingModal: React.FC = () => {
               fontSize: "var(--text-xs)",
             }}
           >
-            <option value="google-antigravity">Google Antigravity (Gemini 3 Pro / Mandatory Thinking)</option>
-            <option value="openai-codex">ChatGPT Plus/Pro (Codex Subscription)</option>
-            <option value="openrouter">OpenRouter Gateway (500+ Modelos)</option>
-            <option value="anthropic">Anthropic (Claude 3.7 Sonnet / Opus)</option>
-            <option value="openai">OpenAI (GPT-4o / O3-Mini)</option>
-            <option value="deepseek">DeepSeek R1 / V3</option>
-            <option value="groq">Meta Llama 3.3 (Groq Ultra Fast)</option>
+            {(FULL_CATALOG_RAW as any[]).map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name} ({p.id}) {p.kind === "oauth-code" || p.kind === "device-code" ? "• Web OAuth" : "• API Key"}
+              </option>
+            ))}
           </select>
         </div>
 
