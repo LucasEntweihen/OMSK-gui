@@ -10,6 +10,76 @@ import { IdentifiedFilesCard } from "./components/IdentifiedFilesCard";
 import { MessageComposer } from "./components/MessageComposer";
 import type { ChatAttachment, ChatMessage } from "@/types";
 
+
+function renderHighlightedMessageContent(content: string) {
+  if (!content) return null;
+
+  // Se for mensagem de slash command (/doomania, /deepseaneuron, etc.)
+  if (content.startsWith("/")) {
+    const parts = content.split(" ");
+    const cmd = parts[0];
+    const rest = parts.slice(1).join(" ");
+
+    let cmdColor = "var(--blue-400)";
+    let badgeText = "COMANDO";
+    if (cmd === "/doomania") {
+      cmdColor = "#10B981"; // Verde esmeralda de deliberação tripla
+      badgeText = "DOOMANIA DELIBERATION";
+    } else if (cmd === "/deepseaneuron") {
+      cmdColor = "#00F0FF"; // Ciano neon do contrato deepseaneuron
+      badgeText = "NEURAL OPTIMIZATION";
+    } else if (cmd === "/clear") {
+      cmdColor = "#EF4444";
+      badgeText = "CLEAR TRANSCRIPT";
+    } else if (cmd === "/model") {
+      cmdColor = "#F59E0B";
+      badgeText = "MODEL SWITCH";
+    } else if (cmd === "/tools") {
+      cmdColor = "#8B5CF6";
+      badgeText = "TOOL REGISTRY";
+    }
+
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <span
+            style={{
+              fontFamily: "var(--font-code)",
+              fontWeight: 800,
+              fontSize: "15px",
+              color: cmdColor,
+              textShadow: "0 0 10px " + cmdColor + "40",
+            }}
+          >
+            {cmd}
+          </span>
+          <span
+            style={{
+              fontSize: "10px",
+              padding: "2px 7px",
+              borderRadius: "var(--radius-full)",
+              backgroundColor: cmdColor + "20",
+              color: cmdColor,
+              border: "1px solid " + cmdColor + "50",
+              fontWeight: 700,
+              fontFamily: "var(--font-code)",
+            }}
+          >
+            {badgeText}
+          </span>
+        </div>
+        {rest && (
+          <span style={{ color: "var(--color-text)", fontSize: "var(--text-md)" }}>
+            {rest}
+          </span>
+        )}
+      </div>
+    );
+  }
+
+  return content;
+}
+
 export const ChatPage: React.FC = () => {
   const { messages, isGenerating, sendMessage, abortGeneration, respondToAsk, saveMessageToTeia } = useChatStore();
   const { showNotification } = useAppStore();

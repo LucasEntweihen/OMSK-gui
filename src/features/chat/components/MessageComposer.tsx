@@ -16,6 +16,28 @@ import { useChatStore } from "@/store/useChatStore";
 import { useAppStore } from "@/store/useAppStore";
 import { useContextStore } from "@/store/useContextStore";
 
+
+interface SlashCmd {
+  name: string;
+  desc: string;
+  badge: string;
+  badgeColor: string;
+}
+
+const BUILTIN_SLASH_COMMANDS: SlashCmd[] = [
+  { name: "/doomania", desc: "Painel de deliberação tripla (Crítico, Permissivo, Criativo)", badge: "Deliberação", badgeColor: "#10B981" },
+  { name: "/deepseaneuron", desc: "Ativa otimização e contrato de ultra-raciocínio neural", badge: "Neural", badgeColor: "#00F0FF" },
+  { name: "/clear", desc: "Limpa o transcript de conversa da sessão atual", badge: "Sessão", badgeColor: "#EF4444" },
+  { name: "/model", desc: "Consulta ou chaveia o modelo de IA ativo", badge: "Modelos", badgeColor: "#F59E0B" },
+  { name: "/tools", desc: "Lista todas as ferramentas ativas no motor OMSK", badge: "Tools", badgeColor: "#8B5CF6" },
+  { name: "/compact", desc: "Executa compactação de contexto e economia de tokens", badge: "Tokens", badgeColor: "#3B82F6" },
+  { name: "/taskmanager", desc: "Exibe o status da fila de tarefas em background", badge: "Tarefas", badgeColor: "#EC4899" },
+  { name: "/stats", desc: "Exibe telemetria de processos, memória e latência", badge: "Sistema", badgeColor: "#6366F1" },
+  { name: "/login", desc: "Autenticar provedor OAuth no navegador oficial", badge: "Auth", badgeColor: "#14B8A6" },
+  { name: "/logout", desc: "Desconectar provedor e limpar credenciais", badge: "Auth", badgeColor: "#9CA3AF" },
+  { name: "/help", desc: "Exibe todos os comandos disponíveis no OMSK", badge: "Ajuda", badgeColor: "#64748B" },
+];
+
 export const MessageComposer: React.FC = () => {
   const {
     activeInput,
@@ -36,6 +58,24 @@ export const MessageComposer: React.FC = () => {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const imageInputRef = React.useRef<HTMLInputElement>(null);
   const [contextDropdownOpen, setContextDropdownOpen] = React.useState(false);
+  const [slashMenuOpen, setSlashMenuOpen] = React.useState(false);
+  const [selectedSlashIndex, setSelectedSlashIndex] = React.useState(0);
+
+  const filteredCommands = React.useMemo(() => {
+    if (!activeInput.startsWith("/")) return [];
+    const query = activeInput.toLowerCase();
+    return BUILTIN_SLASH_COMMANDS.filter((cmd) => cmd.name.toLowerCase().startsWith(query));
+  }, [activeInput]);
+
+  React.useEffect(() => {
+    if (activeInput.startsWith("/") && filteredCommands.length > 0) {
+      setSlashMenuOpen(true);
+      setSelectedSlashIndex(0);
+    } else {
+      setSlashMenuOpen(false);
+    }
+  }, [activeInput, filteredCommands.length]);
+
 
   const handleSend = () => {
     if ((!activeInput.trim() && pendingAttachments.length === 0) || isGenerating) return;
@@ -187,6 +227,106 @@ export const MessageComposer: React.FC = () => {
                 {item.size && <span style={{ color: "var(--color-text-muted)" }}>{item.size}</span>}
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      
+      {/* Menu Popup Flutuante de Slash Commands (/) */}
+      {slashMenuOpen && filteredCommands.length > 0 && (
+        <div
+          style={{
+            position: "absolute",
+            bottom: "85px",
+            left: "50%",
+            transform: "translateX(-50%)",
+            width: "100%",
+            maxWidth: "640px",
+            backgroundColor: "var(--ocean-900)",
+            border: "1px solid var(--blue-500)",
+            borderRadius: "var(--radius-lg)",
+            boxShadow: "0 12px 36px rgba(0, 0, 0, 0.6), 0 0 16px rgba(38, 120, 255, 0.2)",
+            zIndex: 120,
+            overflow: "hidden",
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+          <div
+            style={{
+              padding: "8px 14px",
+              backgroundColor: "var(--ocean-850)",
+              borderBottom: "1px solid var(--color-border)",
+              fontSize: "11px",
+              fontWeight: 700,
+              color: "var(--color-text-secondary)",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <span>⚡ Comandos OMSK (Use ↑↓ para navegar e Enter para escolher)</span>
+            <span style={{ fontFamily: "var(--font-code)", fontSize: "10px", color: "var(--color-text-muted)" }}>
+              {filteredCommands.length} opções
+            </span>
+          </div>
+
+          <div style={{ maxHeight: "240px", overflowY: "auto", padding: "4px" }}>
+            {filteredCommands.map((cmd, idx) => {
+              const isSelected = idx === selectedSlashIndex;
+              return (
+                <div
+                  key={cmd.name}
+                  onClick={() => {
+                    setActiveInput(cmd.name + " ");
+                    setSlashMenuOpen(false);
+                    textareaRef.current?.focus();
+                  }}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    padding: "8px 12px",
+                    borderRadius: "var(--radius-sm)",
+                    backgroundColor: isSelected ? "var(--ocean-800)" : "transparent",
+                    borderLeft: isSelected ? "3px solid " + cmd.badgeColor : "3px solid transparent",
+                    cursor: "pointer",
+                    transition: "all var(--duration-fast)",
+                  }}
+                  onMouseEnter={() => setSelectedSlashIndex(idx)}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    <span
+                      style={{
+                        fontFamily: "var(--font-code)",
+                        fontWeight: 700,
+                        fontSize: "var(--text-sm)",
+                        color: cmd.badgeColor,
+                      }}
+                    >
+                      {cmd.name}
+                    </span>
+                    <span style={{ fontSize: "var(--text-xs)", color: "var(--color-text-muted)" }}>
+                      {cmd.desc}
+                    </span>
+                  </div>
+
+                  <span
+                    style={{
+                      fontSize: "10px",
+                      padding: "2px 8px",
+                      borderRadius: "var(--radius-full)",
+                      backgroundColor: cmd.badgeColor + "20",
+                      color: cmd.badgeColor,
+                      border: "1px solid " + cmd.badgeColor + "40",
+                      fontWeight: 600,
+                    }}
+                  >
+                    {cmd.badge}
+                  </span>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

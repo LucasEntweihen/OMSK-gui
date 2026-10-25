@@ -62,6 +62,18 @@ export const AVAILABLE_MODELS: readonly AIModel[] = [
   },
 ];
 
+
+function getInitialActiveModel(): AIModel {
+  try {
+    const savedId = localStorage.getItem("oms_last_active_model_id");
+    if (savedId) {
+      const found = AVAILABLE_MODELS.find((m) => m.id === savedId);
+      if (found) return found;
+    }
+  } catch {}
+  return AVAILABLE_MODELS[0]!;
+}
+
 export const useAppStore = create<AppState>((set) => ({
   currentRoute: "chat",
   sidebarCollapsed: false,
@@ -70,7 +82,7 @@ export const useAppStore = create<AppState>((set) => ({
   availableModels: AVAILABLE_MODELS,
   authenticatedProviders: [],
   realProviders: [],
-  activeModel: AVAILABLE_MODELS[0]!,
+  activeModel: getInitialActiveModel(),
   activeScope: "~/projects/oh-my-shark",
   gitBranch: "main",
   tokenUsage: {
@@ -88,7 +100,12 @@ export const useAppStore = create<AppState>((set) => ({
   toggleInspector: () => set((state) => ({ inspectorOpen: !state.inspectorOpen })),
   setInspectorOpen: (open) => set({ inspectorOpen: open }),
   setActiveInspectorTab: (tab) => set({ activeInspectorTab: tab, inspectorOpen: true }),
-  setActiveModel: (model) => set({ activeModel: model }),
+  setActiveModel: (model) => {
+    try {
+      localStorage.setItem("oms_last_active_model_id", model.id);
+    } catch {}
+    set({ activeModel: model });
+  },
   setCommandPaletteOpen: (open) => set({ commandPaletteOpen: open }),
   setActiveAgentMode: (mode) => set({ activeAgentMode: mode }),
   showNotification: (message, type = "info") => {
@@ -122,7 +139,14 @@ export const useAppStore = create<AppState>((set) => ({
           set({
             availableModels: [...mappedModels, ...AVAILABLE_MODELS],
             authenticatedProviders: authed,
-            activeModel: mappedModels[0]!,
+            activeModel: (() => {
+              const savedId = (() => { try { return localStorage.getItem("oms_last_active_model_id"); } catch { return null; } })();
+              if (savedId) {
+                const match = mappedModels.find(m => m.id === savedId) || AVAILABLE_MODELS.find(m => m.id === savedId);
+                if (match) return match;
+              }
+              return mappedModels[0]!;
+            })(),
           });
         } else {
           set({ authenticatedProviders: authed });
