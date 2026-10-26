@@ -11,73 +11,229 @@ import { MessageComposer } from "./components/MessageComposer";
 import type { ChatAttachment, ChatMessage } from "@/types";
 
 
+interface MagicKeywordMeta {
+  color: string;
+  bg: string;
+  badge: string;
+  glow: string;
+  gradient: string;
+}
+
+const MAGIC_KEYWORDS_SPEC: Record<string, MagicKeywordMeta> = {
+  // Palavras mágicas primárias (suportam tanto "\keyword", "/keyword" quanto "keyword")
+  ultrathink: {
+    color: "#FF5E97",
+    bg: "rgba(255, 94, 151, 0.15)",
+    badge: "ULTRATHINK (MAX REASONING)",
+    glow: "0 0 14px rgba(255, 94, 151, 0.5)",
+    gradient: "linear-gradient(90deg, #FF5E97, #A855F7, #3B82F6, #10B981)",
+  },
+  orchestrate: {
+    color: "#2DD4BF",
+    bg: "rgba(45, 212, 191, 0.15)",
+    badge: "ORCHESTRATE (PARALLEL SUBAGENTS)",
+    glow: "0 0 12px rgba(45, 212, 191, 0.45)",
+    gradient: "linear-gradient(90deg, #2DD4BF, #6366F1)",
+  },
+  workflowz: {
+    color: "#F59E0B",
+    bg: "rgba(245, 158, 11, 0.15)",
+    badge: "WORKFLOWZ (EVAL PIPELINE)",
+    glow: "0 0 12px rgba(245, 158, 11, 0.45)",
+    gradient: "linear-gradient(90deg, #F59E0B, #10B981)",
+  },
+  promaxthink: {
+    color: "#EF4444",
+    bg: "rgba(239, 68, 68, 0.15)",
+    badge: "PROMAXTHINK (5x DEEP COGNITION)",
+    glow: "0 0 14px rgba(239, 68, 68, 0.5)",
+    gradient: "linear-gradient(90deg, #DC2626, #F87171, #F97316)",
+  },
+  deepseaneuron: {
+    color: "#00F0FF",
+    bg: "rgba(0, 240, 255, 0.15)",
+    badge: "DEEPSEANEURON (TOKEN OPTIMIZATION)",
+    glow: "0 0 12px rgba(0, 240, 255, 0.5)",
+    gradient: "linear-gradient(90deg, #00F0FF, #3B82F6)",
+  },
+  doomania: {
+    color: "#10B981",
+    bg: "rgba(16, 185, 129, 0.15)",
+    badge: "DOOMANIA (TRIAD DELIBERATION)",
+    glow: "0 0 12px rgba(16, 185, 129, 0.5)",
+    gradient: "linear-gradient(90deg, #10B981, #059669)",
+  },
+  fastthinkworkerz: {
+    color: "#EAB308",
+    bg: "rgba(234, 179, 8, 0.15)",
+    badge: "FASTTHINK (MAX VELOCITY)",
+    glow: "0 0 12px rgba(234, 179, 8, 0.45)",
+    gradient: "linear-gradient(90deg, #EAB308, #FFFFFF)",
+  },
+  xlr8: {
+    color: "#F43F5E",
+    bg: "rgba(244, 63, 94, 0.15)",
+    badge: "XLR8 (SPEED MODE)",
+    glow: "0 0 12px rgba(244, 63, 94, 0.45)",
+    gradient: "linear-gradient(90deg, #F43F5E, #FB7185)",
+  },
+  vibecoding: {
+    color: "#C084FC",
+    bg: "rgba(192, 132, 252, 0.15)",
+    badge: "VIBECODING (FLOW STATE)",
+    glow: "0 0 12px rgba(192, 132, 252, 0.45)",
+    gradient: "linear-gradient(90deg, #C084FC, #F472B6)",
+  },
+  // Slash commands
+  clear: {
+    color: "#EF4444",
+    bg: "rgba(239, 68, 68, 0.15)",
+    badge: "CLEAR TRANSCRIPT",
+    glow: "0 0 10px rgba(239, 68, 68, 0.4)",
+    gradient: "linear-gradient(90deg, #EF4444, #DC2626)",
+  },
+  model: {
+    color: "#F59E0B",
+    bg: "rgba(245, 158, 11, 0.15)",
+    badge: "MODEL SWITCH",
+    glow: "0 0 10px rgba(245, 158, 11, 0.4)",
+    gradient: "linear-gradient(90deg, #F59E0B, #D97706)",
+  },
+  tools: {
+    color: "#8B5CF6",
+    bg: "rgba(139, 92, 246, 0.15)",
+    badge: "TOOL REGISTRY",
+    glow: "0 0 10px rgba(139, 92, 246, 0.4)",
+    gradient: "linear-gradient(90deg, #8B5CF6, #7C3AED)",
+  },
+  taskmanager: {
+    color: "#EC4899",
+    bg: "rgba(236, 72, 153, 0.15)",
+    badge: "TASK MANAGER HUD",
+    glow: "0 0 10px rgba(236, 72, 153, 0.4)",
+    gradient: "linear-gradient(90deg, #EC4899, #DB2777)",
+  },
+  stats: {
+    color: "#6366F1",
+    bg: "rgba(99, 102, 241, 0.15)",
+    badge: "SYSTEM TELEMETRY",
+    glow: "0 0 10px rgba(99, 102, 241, 0.4)",
+    gradient: "linear-gradient(90deg, #6366F1, #4F46E5)",
+  },
+  compact: {
+    color: "#3B82F6",
+    bg: "rgba(59, 130, 246, 0.15)",
+    badge: "CONTEXT COMPACT",
+    glow: "0 0 10px rgba(59, 130, 246, 0.4)",
+    gradient: "linear-gradient(90deg, #3B82F6, #2563EB)",
+  },
+  login: {
+    color: "#14B8A6",
+    bg: "rgba(20, 184, 166, 0.15)",
+    badge: "WEB AUTH / LOGIN",
+    glow: "0 0 10px rgba(20, 184, 166, 0.4)",
+    gradient: "linear-gradient(90deg, #14B8A6, #0D9488)",
+  },
+};
+
 function renderHighlightedMessageContent(content: string) {
   if (!content) return null;
 
-  // Se for mensagem de slash command (/doomania, /deepseaneuron, etc.)
-  if (content.startsWith("/")) {
+  // 1. Mensagem começando com "/" ou "" (Slash Command ou Escape Command)
+  if (content.startsWith("/") || content.startsWith("\\")) {
+    const cleanPrefix = content.startsWith("/") ? "/" : "\\";
     const parts = content.split(" ");
-    const cmd = parts[0];
+    const rawCmd = parts[0];
+    const key = rawCmd.slice(cleanPrefix.length).toLowerCase();
     const rest = parts.slice(1).join(" ");
+    const meta = MAGIC_KEYWORDS_SPEC[key];
 
-    let cmdColor = "var(--blue-400)";
-    let badgeText = "COMANDO";
-    if (cmd === "/doomania") {
-      cmdColor = "#10B981"; // Verde esmeralda de deliberação tripla
-      badgeText = "DOOMANIA DELIBERATION";
-    } else if (cmd === "/deepseaneuron") {
-      cmdColor = "#00F0FF"; // Ciano neon do contrato deepseaneuron
-      badgeText = "NEURAL OPTIMIZATION";
-    } else if (cmd === "/clear") {
-      cmdColor = "#EF4444";
-      badgeText = "CLEAR TRANSCRIPT";
-    } else if (cmd === "/model") {
-      cmdColor = "#F59E0B";
-      badgeText = "MODEL SWITCH";
-    } else if (cmd === "/tools") {
-      cmdColor = "#8B5CF6";
-      badgeText = "TOOL REGISTRY";
-    }
-
-    return (
-      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <span
-            style={{
-              fontFamily: "var(--font-code)",
-              fontWeight: 800,
-              fontSize: "15px",
-              color: cmdColor,
-              textShadow: "0 0 10px " + cmdColor + "40",
-            }}
-          >
-            {cmd}
-          </span>
-          <span
-            style={{
-              fontSize: "10px",
-              padding: "2px 7px",
-              borderRadius: "var(--radius-full)",
-              backgroundColor: cmdColor + "20",
-              color: cmdColor,
-              border: "1px solid " + cmdColor + "50",
-              fontWeight: 700,
-              fontFamily: "var(--font-code)",
-            }}
-          >
-            {badgeText}
-          </span>
+    if (meta) {
+      return (
+        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+            <span
+              style={{
+                fontFamily: "var(--font-code)",
+                fontWeight: 800,
+                fontSize: "15px",
+                background: meta.gradient,
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                textShadow: meta.glow,
+              }}
+            >
+              {rawCmd}
+            </span>
+            <span
+              style={{
+                fontSize: "10px",
+                padding: "2px 8px",
+                borderRadius: "var(--radius-full)",
+                backgroundColor: meta.bg,
+                color: meta.color,
+                border: "1px solid " + meta.color + "50",
+                fontWeight: 700,
+                fontFamily: "var(--font-code)",
+                letterSpacing: "0.5px",
+              }}
+            >
+              {meta.badge}
+            </span>
+          </div>
+          {rest && (
+            <span style={{ color: "var(--color-text)", fontSize: "var(--text-md)", lineHeight: 1.6 }}>
+              {rest}
+            </span>
+          )}
         </div>
-        {rest && (
-          <span style={{ color: "var(--color-text)", fontSize: "var(--text-md)" }}>
-            {rest}
-          </span>
-        )}
-      </div>
-    );
+      );
+    }
   }
 
-  return content;
+  // 2. Destacar palavras mágicas inseridas no meio do texto
+  const regex = /\\(ultrathink|orchestrate|workflowz|promaxthink|deepseaneuron|doomania|fastthinkworkerz|xlr8|vibecoding)|\/(ultrathink|orchestrate|workflowz|promaxthink|deepseaneuron|doomania|fastthinkworkerz|xlr8|vibecoding)|\b(ultrathink|orchestrate|workflowz|promaxthink|deepseaneuron|doomania|fastthinkworkerz|xlr8|vibecoding)\b/gi;
+
+  const matches = content.match(regex);
+  if (!matches) {
+    return content;
+  }
+
+  const tokens = content.split(regex);
+  return (
+    <span>
+      {tokens.map((token, i) => {
+        if (!token) return null;
+        const normalized = token.replace(/^[\/\\]/, "").toLowerCase();
+        const meta = MAGIC_KEYWORDS_SPEC[normalized];
+        if (meta) {
+          return (
+            <span
+              key={i}
+              style={{
+                padding: "1px 6px",
+                borderRadius: "4px",
+                backgroundColor: meta.bg,
+                border: "1px solid " + meta.color + "60",
+                color: meta.color,
+                fontWeight: 700,
+                fontFamily: "var(--font-code)",
+                fontSize: "0.95em",
+                margin: "0 2px",
+                textShadow: meta.glow,
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "4px",
+              }}
+            >
+              <span>{token}</span>
+            </span>
+          );
+        }
+        return token;
+      })}
+    </span>
+  );
 }
 
 export const ChatPage: React.FC = () => {

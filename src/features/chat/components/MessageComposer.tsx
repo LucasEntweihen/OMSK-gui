@@ -25,17 +25,24 @@ interface SlashCmd {
 }
 
 const BUILTIN_SLASH_COMMANDS: SlashCmd[] = [
-  { name: "/doomania", desc: "Painel de deliberação tripla (Crítico, Permissivo, Criativo)", badge: "Deliberação", badgeColor: "#10B981" },
-  { name: "/deepseaneuron", desc: "Ativa otimização e contrato de ultra-raciocínio neural", badge: "Neural", badgeColor: "#00F0FF" },
-  { name: "/clear", desc: "Limpa o transcript de conversa da sessão atual", badge: "Sessão", badgeColor: "#EF4444" },
-  { name: "/model", desc: "Consulta ou chaveia o modelo de IA ativo", badge: "Modelos", badgeColor: "#F59E0B" },
-  { name: "/tools", desc: "Lista todas as ferramentas ativas no motor OMSK", badge: "Tools", badgeColor: "#8B5CF6" },
-  { name: "/compact", desc: "Executa compactação de contexto e economia de tokens", badge: "Tokens", badgeColor: "#3B82F6" },
-  { name: "/taskmanager", desc: "Exibe o status da fila de tarefas em background", badge: "Tarefas", badgeColor: "#EC4899" },
-  { name: "/stats", desc: "Exibe telemetria de processos, memória e latência", badge: "Sistema", badgeColor: "#6366F1" },
-  { name: "/login", desc: "Autenticar provedor OAuth no navegador oficial", badge: "Auth", badgeColor: "#14B8A6" },
-  { name: "/logout", desc: "Desconectar provedor e limpar credenciais", badge: "Auth", badgeColor: "#9CA3AF" },
-  { name: "/help", desc: "Exibe todos os comandos disponíveis no OMSK", badge: "Ajuda", badgeColor: "#64748B" },
+  { name: "/ultrathink", desc: "Destrava profundidade máxima de raciocínio neural (Rainbow Gradient)", badge: "MAX REASONING", badgeColor: "#FF5E97" },
+  { name: "/orchestrate", desc: "Despacha tarefas paralelas em subagentes autônomos (Teal/Violet)", badge: "SUBAGENTS", badgeColor: "#2DD4BF" },
+  { name: "/workflowz", desc: "Executa pipeline completo no kernel persistente (Amber/Green)", badge: "PIPELINE", badgeColor: "#F59E0B" },
+  { name: "/promaxthink", desc: "Ativa 5x profundidade cognitiva e auto-verificação adversarial (Red Flame)", badge: "5X COGNITION", badgeColor: "#EF4444" },
+  { name: "/deepseaneuron", desc: "Ativa otimização, racionalização e economia de tokens (Neon Cyan)", badge: "TOKEN OPTIM", badgeColor: "#00F0FF" },
+  { name: "/doomania", desc: "Painel de deliberação tripla (Crítico, Permissivo, Criativo)", badge: "DELIBERATION", badgeColor: "#10B981" },
+  { name: "/fastthinkworkerz", desc: "Velocidade radical com minimização de pensamento (Gold/White)", badge: "VELOCITY", badgeColor: "#EAB308" },
+  { name: "/xlr8", desc: "Modo de aceleração direta de turnos", badge: "ACCELERATION", badgeColor: "#F43F5E" },
+  { name: "/vibecoding", desc: "Modo fluído criativo sem atritos", badge: "FLOW STATE", badgeColor: "#C084FC" },
+  { name: "/model", desc: "Consulta ou chaveia o modelo de IA ativo", badge: "MODELS", badgeColor: "#F59E0B" },
+  { name: "/clear", desc: "Limpa o transcript de conversa da sessão atual", badge: "SESSION", badgeColor: "#EF4444" },
+  { name: "/tools", desc: "Lista todas as ferramentas ativas no motor OMSK", badge: "TOOLS", badgeColor: "#8B5CF6" },
+  { name: "/compact", desc: "Executa compactação de contexto e economia de tokens", badge: "TOKENS", badgeColor: "#3B82F6" },
+  { name: "/taskmanager", desc: "Exibe o status da fila de tarefas em background", badge: "TASKS", badgeColor: "#EC4899" },
+  { name: "/stats", desc: "Exibe telemetria de processos, memória e latência", badge: "SYSTEM", badgeColor: "#6366F1" },
+  { name: "/login", desc: "Autenticar provedor OAuth no navegador oficial", badge: "AUTH", badgeColor: "#14B8A6" },
+  { name: "/logout", desc: "Desconectar provedor e limpar credenciais", badge: "AUTH", badgeColor: "#9CA3AF" },
+  { name: "/help", desc: "Exibe todos os comandos disponíveis no OMSK", badge: "HELP", badgeColor: "#64748B" },
 ];
 
 export const MessageComposer: React.FC = () => {
@@ -62,13 +69,19 @@ export const MessageComposer: React.FC = () => {
   const [selectedSlashIndex, setSelectedSlashIndex] = React.useState(0);
 
   const filteredCommands = React.useMemo(() => {
-    if (!activeInput.startsWith("/")) return [];
-    const query = activeInput.toLowerCase();
-    return BUILTIN_SLASH_COMMANDS.filter((cmd) => cmd.name.toLowerCase().startsWith(query));
+    if (!activeInput.startsWith("/") && !activeInput.startsWith("\\")) return [];
+    const prefix = activeInput[0];
+    const query = activeInput.slice(1).toLowerCase();
+    return BUILTIN_SLASH_COMMANDS
+      .filter((cmd) => cmd.name.slice(1).toLowerCase().startsWith(query))
+      .map((cmd) => ({
+        ...cmd,
+        displayName: prefix + cmd.name.slice(1),
+      }));
   }, [activeInput]);
 
   React.useEffect(() => {
-    if (activeInput.startsWith("/") && filteredCommands.length > 0) {
+    if ((activeInput.startsWith("/") || activeInput.startsWith("\\")) && filteredCommands.length > 0) {
       setSlashMenuOpen(true);
       setSelectedSlashIndex(0);
     } else {
@@ -276,9 +289,9 @@ export const MessageComposer: React.FC = () => {
               const isSelected = idx === selectedSlashIndex;
               return (
                 <div
-                  key={cmd.name}
+                  key={cmd.displayName}
                   onClick={() => {
-                    setActiveInput(cmd.name + " ");
+                    setActiveInput(cmd.displayName + " ");
                     setSlashMenuOpen(false);
                     textareaRef.current?.focus();
                   }}

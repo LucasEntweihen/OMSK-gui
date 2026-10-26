@@ -160,6 +160,46 @@ export const ContextPage: React.FC = () => {
         </div>
       </Card>
 
+      
+      {/* Barra de Controles Rápidos e Ações em Lote do Contexto */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap", padding: "12px 16px", backgroundColor: "var(--ocean-900)", borderRadius: "var(--radius-md)", border: "1px solid var(--color-border)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <span style={{ fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--color-text)" }}>
+            Ações de Escopo:
+          </span>
+          <div style={{ display: "flex", gap: "6px" }}>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                allFlattened.forEach((f) => {
+                  if (f.availability !== "selected") cycleAvailability(f.id);
+                });
+              }}
+            >
+              Selecionar Todos
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => {
+                allFlattened.forEach((f) => {
+                  if (f.availability === "selected") cycleAvailability(f.id);
+                });
+              }}
+            >
+              Limpar Seleção
+            </Button>
+          </div>
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", gap: "16px", fontSize: "var(--text-xs)" }}>
+          <span style={{ color: "var(--color-text-muted)" }}>
+            Ocupação estimada do Contexto: <strong style={{ color: "var(--blue-400)" }}>{Math.round((stats.selected / (allFlattened.length || 1)) * 100)}%</strong>
+          </span>
+        </div>
+      </div>
+
       {/* Busca de Arquivos ou Regras */}
       <div
         style={{

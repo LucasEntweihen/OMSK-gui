@@ -45,7 +45,8 @@ export const TeiaExplorer: React.FC<TeiaExplorerProps> = ({
   searchQuery,
   onSearchChange,
 }) => {
-  const [filterTab, setFilterTab] = React.useState<"all" | "hubs" | "ghosts">("all");
+  const [filterTab, setFilterTab] = React.useState<"all" | "types" | "hubs" | "ghosts">("all");
+  const [selectedTypeGroup, setSelectedTypeGroup] = React.useState<string>("all");
 
   const filteredNodes = React.useMemo(() => {
     let base = nodes.filter((n) => !n.ghost);
